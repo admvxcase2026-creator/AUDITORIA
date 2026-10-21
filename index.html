@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditoria de Estoque - VX Case</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiM0ZjdjZmYiLz48cGF0aCBkPSJNMTggMzRsMTAgMTAgMTgtMjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSI2LjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==">
+<meta name="theme-color" content="#12202a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#14222b;--ink2:#52636d;--mute:#8896a0;--ground:#e8ecea;--sheet:#fff;--rule:#d5dcda;--rule2:#e6ebe9;
+  --acc:#0f5c63;--accfg:#fff;--accs:#dcebec;--falta:#b8402c;--faltas:#f6e3de;--exc:#a8690f;--excs:#f6ead2;--ok:#2b7a58;--oks:#dcefe6;
+  --side:#12202a;--sidefg:#aebdc3;--sideon:#1f3541;--tintf:#fdf6f4;--tinte:#fffaf0;--pen:#c3ccd0;--warn:#a8690f;--shadow:0 10px 30px rgba(20,40,50,.14);
+}
+body.dark{
+  --ink:#e4ecef;--ink2:#a3b4bb;--mute:#74878f;--ground:#0d151b;--sheet:#15222a;--rule:#27363f;--rule2:#1f2d35;
+  --acc:#45b4bd;--accfg:#04252a;--accs:#173a3f;--falta:#f0806c;--faltas:#3b201b;--exc:#e3a94d;--excs:#3a2b10;--ok:#4fc491;--oks:#133a2b;
+  --side:#0a1217;--sideon:#183039;--tintf:#251a18;--tinte:#272110;--pen:#41525b;--warn:#e3a94d;--shadow:0 10px 30px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:14px/1.45 Inter,system-ui,-apple-system,'Segoe UI',sans-serif;font-feature-settings:"tnum","cv11";-webkit-font-smoothing:antialiased}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+button{font-family:inherit}
+.serif{font-family:'Source Serif 4','Bitstream Charter',Charter,Georgia,serif}
+.app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
+aside{background:var(--side);color:var(--sidefg);padding:22px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding:0 8px 18px;color:#fff;font-weight:700;letter-spacing:.2px}
+.logo{width:30px;height:30px;border-radius:8px;background:#e9f0ee;color:#12202a;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+.brand small{display:block;font-weight:500;color:#7f939c;font-size:11.5px;letter-spacing:0}
+nav button{display:flex;width:100%;align-items:center;gap:11px;padding:10px;border-radius:9px;color:var(--sidefg);font-weight:600;font-size:14px;background:transparent;border:0;cursor:pointer;margin-bottom:2px;text-align:left;white-space:nowrap}
+nav button:hover{background:rgba(255,255,255,.05);color:#fff}
+nav button.active{background:var(--sideon);color:#fff}
+nav button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+nav .n{margin-left:auto;font-size:11.5px;background:rgba(255,255,255,.12);border-radius:20px;padding:1px 8px;color:#dbe7ea}
+nav .n.live{background:#e9b64a;color:#2b1d00;font-weight:700}
+.side-foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.1);padding:14px 8px 0;font-size:12px;color:#7f939c;display:flex;justify-content:space-between;align-items:center}
+.side-foot button{background:transparent;border:1px solid rgba(255,255,255,.18);color:#c6d3d8;border-radius:8px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600}
+main{padding:28px 36px 56px;min-width:0;max-width:1320px}
+.section{display:none}.section.active{display:block}
+.top{display:flex;align-items:flex-end;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+h1{margin:0;font:600 26px/1.15 'Source Serif 4','Bitstream Charter',Charter,Georgia,serif;letter-spacing:-.2px}
+.sub{color:var(--ink2);margin-top:4px}
+.sp{flex:1}
+.back{background:none;border:0;color:var(--ink2);cursor:pointer;padding:0;margin-bottom:6px;font-size:13px;font-weight:600}
+.btn{border:1px solid var(--rule);background:var(--sheet);color:var(--ink);padding:9px 15px;border-radius:9px;font:600 13.5px Inter,system-ui,sans-serif;display:inline-flex;gap:8px;align-items:center;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--mute)}
+.btn.p{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+.btn.p:hover{filter:brightness(1.08)}
+.btn.warn{background:var(--warn);border-color:var(--warn);color:#fff}
+body.dark .btn.warn{color:#241800}
+.btn.danger{background:var(--falta);border-color:var(--falta);color:#fff}
+body.dark .btn.danger{color:#2b0d07}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.on{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.btn .c{opacity:.65;font-weight:500}
+input,select,textarea{background:var(--sheet);border:1px solid var(--rule);color:var(--ink);padding:9px 12px;border-radius:9px;font:14px Inter,system-ui,sans-serif;max-width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--accs)}
+input[type=search]{min-width:240px}
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:12px}
+.ph{padding:16px 20px 0;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ph h3{margin:0;font:650 14.5px Inter,sans-serif}.ph span{color:var(--mute);font-size:12.5px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:650;white-space:nowrap}
+.badge i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-ok{background:var(--oks);color:var(--ok)}.b-live{background:var(--excs);color:var(--exc)}.b-falta{background:var(--faltas);color:var(--falta)}.b-excesso{background:var(--excs);color:var(--exc)}.b-pendente{background:var(--rule2);color:var(--ink2)}.b-rec{background:var(--accs);color:var(--acc)}
+.recon{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--rule2);gap:2px}
+.recon i{display:block;height:100%;min-width:0}
+.r-ok{background:var(--ok)}.r-f{background:var(--falta)}.r-e{background:#d89a2b}.r-p{background:var(--pen)}.r-a{background:var(--acc)}
+.up{color:var(--ok)}.down{color:var(--falta)}.mute{color:var(--mute)}.muted{color:var(--mute)}
+.hidden{display:none!important}
+table{width:100%;border-collapse:collapse}
+th{font:600 12px Inter,sans-serif;color:var(--mute);text-align:left;padding:12px 16px;border-bottom:1px solid var(--rule);white-space:nowrap;background:var(--sheet);position:sticky;top:0;z-index:2}
+td{padding:12px 16px;border-bottom:1px solid var(--rule2);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:rgba(127,150,160,.06)}
+.r{text-align:right}.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tablewrap{overflow:auto;max-height:68vh;border-radius:12px}
+.av{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--accs);color:var(--acc);font-weight:700;font-size:11px;border:2px solid var(--sheet);margin-left:-4px}
+.av:first-child{margin-left:0}.avs{display:inline-flex}
+.chip{display:inline-block;background:var(--rule2);border-radius:20px;padding:2px 10px;font-size:12px;margin:2px 4px 2px 0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:18px}
+.kpis>div{padding:16px 20px;border-left:1px solid var(--rule)}
+.kpis>div:first-child{border-left:0}
+.kpis .l{color:var(--ink2);font-size:12.5px;font-weight:600}
+.kpis .v{font:600 22px 'Source Serif 4',Georgia,serif;margin-top:4px;letter-spacing:-.3px}
+.grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin-bottom:18px}
+.grid3{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.hero-n{font:600 68px/1 'Source Serif 4',Georgia,serif;letter-spacing:-2px}
+.hero-n small{font-size:34px;color:var(--ink2);letter-spacing:0}
+.pbar{display:grid;grid-template-columns:30px 1fr 44px;gap:10px;align-items:center}
+.pbar .recon{height:6px;margin-top:5px}
+.catrow{display:grid;grid-template-columns:130px 1fr 96px;gap:12px;align-items:center;margin:11px 0}
+.catrow .bar{height:9px;background:var(--rule2);border-radius:5px}
+.catrow .bar div{height:100%;border-radius:5px}
+.empty{padding:36px;text-align:center;color:var(--mute)}
+/* contagem */
+.cprog{padding:18px 22px;margin-bottom:14px}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px 18px;margin-top:14px}
+.catgrid .t{font-size:12.5px;color:var(--ink2);display:flex;justify-content:space-between;gap:8px}
+.resp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--sheet);border:1px solid var(--rule);border-radius:12px;padding:10px 14px;margin-bottom:14px}
+.resp-bar select{min-width:200px}
+.clist{overflow:hidden}
+.crow{display:grid;grid-template-columns:86px minmax(0,1fr) 84px 158px 72px 112px 112px;gap:0 12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--rule2);border-left:4px solid transparent}
+.crow:last-child{border-bottom:0}
+.crow.falta{border-left-color:var(--falta);background:var(--tintf)}
+.crow.excesso{border-left-color:#d89a2b;background:var(--tinte)}
+.crow.ok{border-left-color:var(--ok)}
+.chead{font:600 12px Inter,sans-serif;color:var(--mute);border-bottom:1px solid var(--rule);position:sticky;top:0;background:var(--sheet);z-index:3;padding-top:12px;padding-bottom:12px}
+.c-code{font-weight:700}
+.c-item .nm{font-weight:500}.c-item .ct{color:var(--mute);font-size:12px}
+.c-item textarea{margin-top:6px;width:100%;min-height:42px;font-size:12px;padding:6px 8px;resize:vertical}
+.c-dif{text-align:right;font-size:16px;font-weight:650;font-variant-numeric:tabular-nums}
+.c-esp{text-align:right;font-size:16px;font-variant-numeric:tabular-nums}
+.step{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--sheet);justify-self:end}
+.step:focus-within{border:1px solid var(--acc);box-shadow:0 0 0 4px var(--accs)}
+.step button{width:36px;height:40px;border:0;background:transparent;color:var(--ink2);font-size:20px;cursor:pointer;line-height:1}
+.step button:hover{background:var(--rule2)}
+.step input{width:66px;text-align:center;font-size:18px;font-weight:700;border:0;border-radius:0;padding:8px 0;box-shadow:none!important;background:transparent;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.saved{margin-top:12px;display:flex;gap:10px;align-items:center;color:var(--ink2);font-size:12.5px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--sheet)}
+.seg button{border:0;background:transparent;color:var(--ink2);padding:9px 18px;font-weight:650;font-size:13.5px;cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--sheet)}
+.menu{position:relative;display:inline-block}
+.menu>button{background:transparent;border:0;color:var(--mute);font-size:20px;font-weight:800;letter-spacing:1px;cursor:pointer;padding:4px 8px;border-radius:8px}
+.menu>button:hover{background:var(--rule2)}
+.menu .dd{display:none;position:absolute;right:0;top:100%;z-index:30;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);min-width:170px;padding:5px}
+.menu.open .dd{display:block}
+.menu .dd button{display:block;width:100%;text-align:left;background:transparent;border:0;padding:9px 11px;border-radius:7px;cursor:pointer;color:var(--ink);font-weight:600;font-size:13.5px}
+.menu .dd button:hover{background:var(--rule2)}
+.menu .dd button.dg{color:var(--falta)}
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(8,16,22,.6);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow:auto}
+.overlay.open{display:flex}
+.modal{background:var(--sheet);border:1px solid var(--rule);border-radius:14px;padding:24px;width:100%;max-width:560px;box-shadow:var(--shadow)}
+.modal.wide{max-width:900px}
+.modal h3{margin:0 0 14px;font:600 20px 'Source Serif 4',Georgia,serif}
+.field{margin-bottom:14px}
+.field label{display:block;color:var(--ink2);font-size:12.5px;font-weight:600;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%}
+.partic-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.partic-list label{display:flex;align-items:center;gap:6px;background:var(--rule2);padding:7px 11px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--ink);margin:0}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.assign{display:grid;grid-template-columns:1fr 170px;gap:6px 10px;max-height:240px;overflow:auto;border:1px solid var(--rule);border-radius:10px;padding:10px;margin-top:2px}
+.assign .cat{align-self:center;font-size:13px}
+.assign select{padding:6px 8px;width:100%}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.diff-block{margin:10px 0;border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.diff-block .head{padding:9px 12px;font-weight:700;display:flex;justify-content:space-between;background:var(--rule2)}
+.diff-block .body{max-height:170px;overflow:auto}
+.diff-block .body div{padding:6px 12px;border-top:1px solid var(--rule);font-size:13px;display:flex;justify-content:space-between;gap:12px}
+.rel-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:14px 0}
+.rel-cards .c{border:1px solid var(--rule);border-radius:10px;padding:12px 14px}
+.rel-cards .c .l{color:var(--ink2);font-size:12px;font-weight:600}.rel-cards .c .v{font:600 20px 'Source Serif 4',Georgia,serif;margin-top:3px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--sheet);border:1px solid var(--rule);border-left:4px solid var(--acc);padding:12px 16px;border-radius:10px;z-index:80;max-width:360px;box-shadow:var(--shadow);opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:none}.toast.err{border-left-color:var(--falta)}.toast.ok{border-left-color:var(--ok)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--mute);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.skel{color:var(--mute);padding:30px;text-align:center}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.kpis>div:nth-child(4){border-left:0}.grid2,.grid3{grid-template-columns:1fr}}
+@media (max-width:860px){
+  .app{grid-template-columns:1fr}
+  aside{position:sticky;top:0;height:auto;flex-direction:row;align-items:center;padding:8px 10px;z-index:40;overflow-x:auto;gap:4px}
+  .brand{padding:0 8px 0 2px}.brand div div,.brand small,.side-foot span{display:none}
+  nav{display:flex;gap:2px}nav button{width:auto;padding:8px 11px;margin:0}nav button svg{display:none}
+  .side-foot{margin:0 0 0 auto;border:0;padding:0}
+  main{padding:18px 14px 60px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis>div{border-left:0;border-top:1px solid var(--rule)}.kpis>div:nth-child(-n+2){border-top:0}
+  .hero-n{font-size:52px}
+  .chead{display:none}
+  .crow{grid-template-columns:1fr 1fr;gap:10px 12px;padding:14px 14px}
+  .crow>div{min-width:0}.c-item{grid-column:1/-1}
+  .c-code{font-size:12px;color:var(--mute)}
+  .c-esp,.c-dif{text-align:left}
+  .c-esp::before,.c-dif::before{content:attr(data-l);display:block;font-size:11px;font-weight:600;color:var(--mute)}
+  .c-step{grid-column:1/-1}.step{justify-self:stretch}.step input{flex:1;width:auto}.step button{width:56px;height:48px}
+  .tablewrap{max-height:none}
+  input[type=search]{min-width:0;flex:1}
+  .rel-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media print{
+  body *{visibility:hidden}
+  #ovRelatorio,#ovRelatorio *{visibility:visible}
+  #ovRelatorio{position:absolute;inset:0;background:#fff;display:block!important;padding:0;overflow:visible}
+  #ovRelatorio .modal{max-width:100%;width:100%;box-shadow:none;border:none;padding:14px;background:#fff;color:#111}
+  #ovRelatorio .tablewrap{max-height:none;overflow:visible}
+  #ovRelatorio table{font-size:11px}
+  #ovRelatorio th,#ovRelatorio td{color:#111;border-color:#ccc;padding:5px 6px;position:static}
+  #ovRelatorio th{background:#e8e8e8!important}
+  #ovRelatorio .mute,#ovRelatorio .muted{color:#555}
+  #ovRelatorio .modal-actions{display:none}
+  #ovRelatorio tr{break-inside:avoid}
+  #ovRelatorio .rel-cards .c{background:#fff;border-color:#ccc}
+  #ovRelatorio .rel-cards .v,#ovRelatorio h3,#ovRelatorio h4{color:#111}
+  #ovRelatorio .down{color:#a22 !important}
+  @page{margin:14mm}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><div class="logo">VX</div><div><div>Auditoria</div><small>Estoque de PDV</small></div></div>
+  <nav>
+    <button data-tab="dashboard" class="active"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6v-9h-6zM14 8h6V4h-6zM4 20h6v-3H4z"/></svg>Painel</button>
+    <button data-tab="contagem" id="navCont"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8M20 12v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1h9"/></svg>Contagem<span class="n live hidden" id="navLive">em curso</span></button>
+    <button data-tab="auditorias"><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2M3 12a9 9 0 109-9 9 9 0 00-7 3.4M3 4v3h3"/></svg>Histórico<span class="n hidden" id="navHist"></span></button>
+    <button data-tab="divergencias"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3zM12 10v4M12 17v.01"/></svg>Divergências<span class="n hidden" id="navDiv"></span></button>
+    <button data-tab="estoque"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"/></svg>Estoque oficial</button>
+  </nav>
+  <div class="side-foot"><span id="rtState">Conectando...</span><button id="btnTheme" title="Alternar tema">Tema</button></div>
+</aside>
+
+<main>
+  <!-- PAINEL -->
+  <section id="dashboard" class="section active">
+    <div class="top"><div><h1>Painel</h1><div class="sub" id="dashSub"></div></div><div class="sp"></div><button class="btn" id="btnDashXlsx">Exportar resumo</button><button class="btn p" id="btnNovaAud0">+ Nova auditoria</button></div>
+    <div id="dashBody"><div class="skel"><span class="spin"></span> Carregando...</div></div>
+  </section>
+
+  <!-- ESTOQUE -->
+  <section id="estoque" class="section">
+    <div class="top"><div><h1>Estoque oficial</h1><div class="sub">Base usada como quantidade esperada nas auditorias</div></div><div class="sp"></div>
+      <input type="file" id="estFile" accept=".xls,.xlsx" class="hidden">
+      <button class="btn p" id="btnUpload">Subir planilha (Excel)</button></div>
+    <div class="panel kpis" id="estKpis"></div>
+    <div class="toolbar">
+      <input type="search" id="estBusca" placeholder="Buscar item ou código...">
+      <select id="estCat"><option value="">Todas as categorias</option></select>
+      <span class="mute" id="estCount"></span>
+    </div>
+    <div class="panel"><div class="tablewrap"><table id="estTable">
+      <thead><tr><th>Código</th><th>Nome</th><th>Categoria</th><th class="num">Valor</th><th class="num">Estoque</th><th class="num">Total</th></tr></thead>
+      <tbody></tbody></table></div></div>
+    <div class="r" style="margin-top:10px"><button class="btn sm hidden" id="estMais">Mostrar mais</button></div>
+  </section>
+
+  <!-- HISTÓRICO -->
+  <section id="auditorias" class="section">
+    <div class="top"><div><h1>Histórico de auditorias</h1><div class="sub" id="histSub"></div></div><div class="sp"></div><button class="btn" id="btnLog">Registro de atividade</button><button class="btn p" id="btnNovaAud">+ Nova auditoria</button></div>
+    <div class="toolbar">
+      <input type="search" id="histBusca" placeholder="Buscar nº, pessoa ou observação...">
+      <select id="histStatus"><option value="">Todos os status</option><option value="aberta">Em curso</option><option value="finalizada">Finalizadas</option></select>
+      <div class="sp"></div>
+      <span class="mute" style="font-size:12.5px"><b class="up">●</b> confere &nbsp;<b class="down">●</b> falta &nbsp;<b style="color:#d89a2b">●</b> excesso &nbsp;<b style="color:var(--pen)">●</b> a contar</span>
+    </div>
+    <div class="panel"><div class="tablewrap" style="max-height:none"><table id="audTable">
+      <thead><tr><th>Auditoria</th><th>Quem contou</th><th>Resultado da conferência</th><th class="num">Acuracidade</th><th class="num">Faltas</th><th class="num">Excessos</th><th>Status</th><th></th></tr></thead>
+      <tbody></tbody></table></div></div>
+    <div class="panel hidden" id="logBox" style="margin-top:18px"><div class="ph"><h3>Registro de atividade</h3><span>últimas 40 ações</span></div><div id="logBody"></div></div>
+  </section>
+
+  <!-- CONTAGEM -->
+  <section id="contagem" class="section">
+    <div class="top"><div><button class="back" id="btnVoltarAud">&larr; Histórico</button><h1 id="contTitulo"></h1><div class="sub" id="contSub"></div></div><div class="sp"></div><button class="btn warn" id="btnFinalizar">Finalizar auditoria</button></div>
+    <div class="resp-bar" id="respBar">
+      <b>Sou:</b><select id="contResp"><option value="">Todas as categorias</option></select>
+      <span class="mute" id="respHint"></span><div class="sp"></div>
+      <button class="btn sm" id="btnVerTodas">Ver todas as categorias</button>
+    </div>
+    <div class="panel cprog" id="contProgBox"></div>
+    <div class="chips" id="contChips"></div>
+    <div class="toolbar">
+      <input type="search" id="contBusca" placeholder="Buscar nome ou código...">
+      <select id="contCat"><option value="">Todas as categorias</option></select>
+      <div class="sp"></div><span class="mute" style="font-size:12.5px"><b style="background:var(--rule2);border-radius:5px;padding:2px 6px">Enter</b> salva e vai para o próximo item</span>
+    </div>
+    <div class="panel clist" id="contWrap">
+      <div class="crow chead"><div>Código</div><div>Item</div><div class="r">Esperado</div><div class="r">Contado</div><div class="r">Diferença</div><div>Situação</div><div></div></div>
+      <div id="contList"></div>
+    </div>
+    <div class="r" style="margin-top:10px"><button class="btn sm hidden" id="contMais">Mostrar mais itens</button></div>
+    <div class="saved"><span class="badge b-ok hidden" id="savedTag"><i></i><span id="savedTxt"></span></span><span id="presTxt"></span></div>
+  </section>
+
+  <!-- DIVERGÊNCIAS -->
+  <section id="divergencias" class="section">
+    <div class="top"><div><h1>Divergências</h1><div class="sub">Tudo que não bateu em todas as auditorias</div></div><div class="sp"></div>
+      <div class="seg" id="divSeg"><button data-t="falta" class="on">Faltas</button><button data-t="excesso">Excessos</button></div>
+      <button class="btn" id="btnDivXlsx">Exportar Excel</button></div>
+    <div class="panel kpis" id="divKpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+    <div class="toolbar">
+      <input type="search" id="divBusca" placeholder="Buscar item ou código...">
+      <select id="divCat"><option value="">Todas as categorias</option></select>
+      <select id="divAud"><option value="">Todas as auditorias</option></select>
+    </div>
+    <div class="panel"><div class="tablewrap"><table id="divTable"><thead></thead><tbody></tbody></table></div></div>
+    <div class="r" style="margin-top:10px"><button class="btn sm hidden" id="divMais">Mostrar mais</button></div>
+  </section>
+</main>
+</div>
+
+<!-- MODAL: Nova auditoria -->
+<div class="overlay" id="ovNova"><div class="modal">
+  <h3>Nova auditoria</h3>
+  <div class="field"><label>Participantes</label>
+    <div class="partic-list" id="particList"></div>
+    <div class="row"><input type="text" id="novoPartic" placeholder="Adicionar pessoa..." style="flex:1"><button class="btn" id="btnAddPartic">Adicionar</button></div>
+  </div>
+  <div class="field" id="assignField" style="display:none"><label>Quem pega cada categoria (opcional)</label>
+    <div class="assign" id="assignBox"></div>
+    <p class="mute" style="font-size:12px;margin:6px 0 0" id="assignHint">Cada pessoa vê só as categorias dela ao abrir a contagem, sempre com opção de ver todas.</p>
+  </div>
+  <div class="row">
+    <div class="field" style="flex:1"><label>Data da auditoria</label><input type="date" id="audData"></div>
+    <div class="field" style="flex:1"><label>Próxima auditoria</label><input type="date" id="audProxima"><div class="mute" style="font-size:11.5px;margin-top:4px" id="proxHint"></div></div>
+  </div>
+  <div class="field"><label>Observação (opcional)</label><input type="text" id="audObs"></div>
+  <p class="mute" style="font-size:12.5px">Serão carregados <b id="novaQtdItens">0</b> itens do estoque atual como quantidade esperada.</p>
+  <div class="modal-actions"><button class="btn" onclick="closeModal('ovNova')">Cancelar</button><button class="btn p" id="btnCriarAud">Criar e abrir</button></div>
+</div></div>
+
+<!-- MODAL: Comparação com estoque -->
+<div class="overlay" id="ovDiff"><div class="modal wide">
+  <h3>Comparação com o estoque atual</h3>
+  <p class="mute" style="font-size:13px;margin-top:-6px">Ao confirmar, a nova planilha passa a valer como estoque oficial.</p>
+  <div id="diffBody"></div>
+  <div class="modal-actions"><button class="btn" onclick="closeModal('ovDiff')">Cancelar</button><button class="btn p" id="btnConfirmDiff">Aplicar nova planilha</button></div>
+</div></div>
+
+<!-- MODAL: Quem está fazendo -->
+<div class="overlay" id="ovQuem"><div class="modal" style="max-width:460px">
+  <h3 id="quemTitulo"></h3>
+  <p class="mute" id="quemMsg" style="margin-top:-6px;font-size:13px"></p>
+  <div class="field"><label>Quem está fazendo esta ação?</label><input type="text" id="quemNome" list="dlPartic" placeholder="Seu nome" autocomplete="off"><datalist id="dlPartic"></datalist></div>
+  <div class="field" id="quemSenhaWrap"><label>Senha</label><input type="password" id="quemSenha" autocomplete="off"></div>
+  <div class="modal-actions"><button class="btn" id="btnQuemCancel">Cancelar</button><button class="btn p" id="btnQuemOk">Confirmar</button></div>
+</div></div>
+
+<!-- MODAL: Relatório -->
+<div class="overlay" id="ovRelatorio"><div class="modal wide">
+  <h3 id="relTitulo">Relatório da auditoria</h3>
+  <p class="mute" id="relSub" style="font-size:13px;margin-top:-6px"></p>
+  <div class="rel-cards" id="relCards"></div>
+  <h4 style="margin:18px 0 8px;color:var(--falta)">Itens em falta</h4>
+  <div class="tablewrap" style="max-height:none"><table id="relFaltaTable">
+    <thead><tr><th>Código</th><th>Item</th><th>Categoria</th><th class="num">Esperado</th><th class="num">Físico</th><th class="num">Falta</th><th class="num">Valor</th><th>Cód. barras</th></tr></thead><tbody></tbody></table></div>
+  <h4 style="margin:18px 0 8px;color:var(--exc)">Itens em excesso</h4>
+  <div class="tablewrap" style="max-height:none"><table id="relExcTable">
+    <thead><tr><th>Código</th><th>Item</th><th>Categoria</th><th class="num">Esperado</th><th class="num">Físico</th><th class="num">Excesso</th><th class="num">Valor</th></tr></thead><tbody></tbody></table></div>
+  <div class="modal-actions"><button class="btn" id="btnRelXlsx">Exportar Excel</button><button class="btn" onclick="window.print()">Imprimir / PDF</button><button class="btn" onclick="closeModal('ovRelatorio')">Fechar</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = 'https://fevhyllvfhvzzfhwyjuk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmh5bGx2Zmh2enpmaHd5anVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzEyMTcsImV4cCI6MjA5NDQ0NzIxN30.GJRgEKW1bVWX1957_bKCTO6aVmR_rXWRCmo9-ZJDPiE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SENHA_EXCLUIR = 'Benicio12';   // mantida a pedido (senha fixa)
+const META_ACUR = 97;                // meta de acuracidade (%)
+const RECONTAR_PCT = 0.03;           // diferença a partir da qual sugere recontagem (3%)
+const PAGE = 1000;                   // tamanho da página de leitura
+
+/* ================= HELPERS ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const money = n => 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0 = n => 'R$ ' + Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const num = n => Number(n||0).toLocaleString('pt-BR');
+const p1 = n => (Math.round(n*10)/10).toFixed(1).replace('.',',');
+function toast(msg, type){ const t=$('#toast'); t.textContent=msg; t.className='toast show '+(type||''); clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',3400); }
+function openModal(id){ $('#'+id).classList.add('open'); }
+function closeModal(id){ $('#'+id).classList.remove('open'); }
+function esc(s){ return (s??'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtCodigos(str){
+  const linhas=(str||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!linhas.length) return '<span class="mute">-</span>';
+  return linhas.map(l=>`<div style="font-size:11px;line-height:1.5;white-space:nowrap">${esc(l)}</div>`).join('');
+}
+function parseValor(v){
+  if(v==null) return 0;
+  if(typeof v==='number') return v;
+  let s=String(v).trim().replace(/[^\d.,-]/g,'');
+  if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  return parseFloat(s)||0;
+}
+async function batch(arr, size, fn){ for(let i=0;i<arr.length;i+=size){ await fn(arr.slice(i,i+size)); } }
+function fmtDate(d){ if(!d) return '-'; const [y,m,dd]=String(d).slice(0,10).split('-'); return `${dd}/${m}/${y}`; }
+function hojeISO(){ const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+function diasEntre(a,b){ return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000); }
+function sigla(n){ const p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+(p[1]?p[1][0]:(p[0]||'?')[1]||'')).toUpperCase(); }
+function avatars(list){ return `<span class="avs">${(list||[]).map(p=>`<span class="av" title="${esc(p)}">${esc(sigla(p))}</span>`).join('')||'<span class="mute">-</span>'}</span>`; }
+// leitura paginada (o Supabase devolve no máximo ~1000 linhas por chamada)
+async function fetchAll(build){
+  let out=[], from=0;
+  for(;;){
+    const {data,error}=await build().range(from,from+PAGE-1);
+    if(error) throw error;
+    out=out.concat(data||[]);
+    if(!data||data.length<PAGE) break;
+    from+=PAGE;
+  }
+  return out;
+}
+async function cnt(q){ const {count,error}=await q; if(error) throw error; return count||0; }
+const STATUS_TXT={ok:'Confere',falta:'Falta',excesso:'Excesso',pendente:'A contar'};
+function xlsx(nome,abas){
+  const wb=XLSX.utils.book_new();
+  Object.keys(abas).forEach(k=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(abas[k].length?abas[k]:[{'-':'sem registros'}]),k.slice(0,31)));
+  XLSX.writeFile(wb,nome);
+}
+
+/* ================= STATE ================= */
+let PRODUTOS=[], PROD_DIRTY=true, AUDITORIAS=[], PARTICIPANTES=[], DIVS=[], DIV_DIRTY=true;
+let CONT=null, ACTIVE_TAB='dashboard';
+let RESUMOS={}, RESUMO_COL=true, RECONTAR_OK=true;
+let DASH_XLSX=null;
+
+/* ================= NAV ================= */
+$$('nav button').forEach(b=>b.onclick=()=>{
+  if(b.dataset.tab==='contagem'){ irParaContagem(); return; }
+  showTab(b.dataset.tab);
+});
+function showTab(tab){
+  if(ACTIVE_TAB==='contagem' && tab!=='contagem') untrackPresence();
+  ACTIVE_TAB=tab;
+  $$('.section').forEach(s=>s.classList.remove('active'));
+  $$('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  $('#'+tab).classList.add('active');
+  window.scrollTo(0,0);
+  if(tab==='dashboard') renderDashboard();
+  if(tab==='estoque') renderEstoque();
+  if(tab==='auditorias') renderAuditorias();
+  if(tab==='divergencias') renderDivergencias();
+}
+async function irParaContagem(){
+  if(CONT && CONT.auditoria.status==='aberta'){ showTab('contagem'); return; }
+  await loadAuditorias();
+  const a=AUDITORIAS.find(x=>x.status==='aberta');
+  if(a) abrirContagem(a.id); else { toast('Nenhuma auditoria em curso. Crie uma nova.','err'); showTab('auditorias'); }
+}
+
+/* ================= LOADERS ================= */
+async function loadProdutos(force){
+  if(!force && !PROD_DIRTY && PRODUTOS.length) return;
+  try{
+    PRODUTOS=await fetchAll(()=>sb.from('aud_produtos').select('*').order('categoria').order('nome').order('id_produto'));
+    PROD_DIRTY=false;
+  }catch(error){ toast('Erro ao carregar estoque: '+error.message,'err'); }
+}
+async function loadAuditorias(){
+  const {data,error}=await sb.from('aud_auditorias').select('*').order('numero',{ascending:false});
+  if(error){ toast('Erro ao carregar auditorias: '+error.message,'err'); return; }
+  AUDITORIAS=data||[];
+  if(AUDITORIAS.length && !('resumo' in AUDITORIAS[0])) RESUMO_COL=false;
+  navBadges();
+}
+async function loadParticipantes(){
+  const {data}=await sb.from('aud_participantes').select('*').eq('ativo',true).order('nome');
+  PARTICIPANTES=data||[];
+  $('#dlPartic').innerHTML=PARTICIPANTES.map(p=>`<option value="${esc(p.nome)}">`).join('');
+}
+async function loadDivs(){
+  if(!DIV_DIRTY && DIVS.length) return;
+  try{
+    DIVS=await fetchAll(()=>sb.from('aud_itens_auditoria').select('id,auditoria_id,id_produto,nome,categoria,valor,qtd_esperada,qtd_fisica,status,codigo_barras').in('status',['falta','excesso']).order('id'));
+    DIV_DIRTY=false;
+  }catch(error){ toast('Erro ao carregar divergências: '+error.message,'err'); }
+  navBadges();
+}
+function navBadges(){
+  const ab=AUDITORIAS.some(a=>a.status==='aberta');
+  $('#navLive').classList.toggle('hidden',!ab);
+  const h=$('#navHist'); h.textContent=AUDITORIAS.length; h.classList.toggle('hidden',!AUDITORIAS.length);
+  const d=$('#navDiv'); d.textContent=DIVS.length; d.classList.toggle('hidden',!DIVS.length);
+}
+function catsEstoque(){
+  const m={};
+  PRODUTOS.forEach(p=>{ if(p.categoria) m[p.categoria]=(m[p.categoria]||0)+Number(p.estoque||0); });
+  return Object.keys(m).filter(c=>m[c]>0).sort();
+}
+function fillCats(sel, current){
+  const cats=catsEstoque();
+  sel.innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  if(current && cats.includes(current)) sel.value=current; else sel.value='';
+}
+
+/* ================= TEMA ================= */
+function applyTheme(t){
+  document.body.classList.toggle('dark', t==='dark');
+  $('#btnTheme').textContent = t==='dark' ? 'Tema claro' : 'Tema escuro';
+  try{ localStorage.setItem('aud_theme', t); }catch(e){}
+}
+$('#btnTheme').onclick=()=>applyTheme(document.body.classList.contains('dark')?'light':'dark');
+
+/* ================= RESUMO POR AUDITORIA ================= */
+async function computeResumo(id){
+  const q=()=>sb.from('aud_itens_auditoria').select('id',{count:'exact',head:true}).eq('auditoria_id',id);
+  const [total,contados,ok]=await Promise.all([cnt(q()),cnt(q().not('qtd_fisica','is',null)),cnt(q().eq('status','ok'))]);
+  const rows=await fetchAll(()=>sb.from('aud_itens_auditoria').select('id,valor,qtd_esperada,qtd_fisica,status').eq('auditoria_id',id).in('status',['falta','excesso']).order('id'));
+  let falta=0,exc=0,vFalta=0,vExc=0;
+  rows.forEach(i=>{
+    const d=(i.qtd_fisica||0)-i.qtd_esperada;
+    if(i.status==='falta'){ falta++; vFalta+=-d*i.valor; }
+    else { exc++; vExc+=d*i.valor; }
+  });
+  return {total,contados,ok,falta,exc,pend:total-contados,vFalta,vExc};
+}
+async function resumoDe(a,force){
+  if(!force && a.status==='finalizada' && a.resumo && a.resumo.total!=null) return a.resumo;
+  const c=RESUMOS[a.id], ttl=a.status==='aberta'?15000:1e12;
+  if(!force && c && Date.now()-c.t<ttl) return c.r;
+  const r=await computeResumo(a.id);
+  RESUMOS[a.id]={r,t:Date.now()};
+  if(a.status==='finalizada' && RESUMO_COL){
+    const {error}=await sb.from('aud_auditorias').update({resumo:r}).eq('id',a.id);
+    if(error){ if(/resumo/i.test(error.message)) RESUMO_COL=false; } else a.resumo=r;
+  }
+  return r;
+}
+async function resumosDe(auds){
+  const falta=auds.filter(a=>!(a.status==='finalizada'&&a.resumo&&a.resumo.total!=null)&&!(RESUMOS[a.id]&&a.status!=='aberta'));
+  if(falta.length>3) toast('Calculando o histórico pela primeira vez. Pode levar alguns segundos...');
+  const out={};
+  for(let i=0;i<auds.length;i+=3){
+    await Promise.all(auds.slice(i,i+3).map(async a=>{ try{ out[a.id]=await resumoDe(a); }catch(e){ out[a.id]=null; } }));
+  }
+  return out;
+}
+const acur=r=>(r&&r.contados>0)?r.ok/r.contados*100:null;
+function reconBar(r,h){
+  if(!r||!r.total) return `<div class="recon" ${h?`style="height:${h}px"`:''}></div>`;
+  const w=x=>(x/r.total*100).toFixed(2);
+  return `<div class="recon" ${h?`style="height:${h}px"`:''}><i class="r-ok" style="width:${w(r.ok)}%"></i><i class="r-f" style="width:${w(r.falta)}%"></i><i class="r-e" style="width:${w(r.exc)}%"></i><i class="r-p" style="width:${w(r.pend)}%"></i></div>`;
+}
+
+/* ================= PAINEL ================= */
+function spark(vals,labels){
+  const w=520,h=200; if(vals.length<2) return '<div class="mute" style="padding:30px 0">Faltam auditorias finalizadas para mostrar a tendência.</div>';
+  let lo=Math.floor(Math.min(...vals,META_ACUR)-1), hi=Math.min(100,Math.ceil(Math.max(...vals,META_ACUR)+0.5)); if(hi-lo<4) lo=hi-4;
+  const X=i=>26+i*(w-46)/(vals.length-1), Y=v=>h-26-(v-lo)/(hi-lo)*(h-48);
+  const pts=vals.map((v,i)=>[X(i),Y(v)]);
+  const d='M'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L');
+  const area=d+` L${pts[pts.length-1][0].toFixed(1)},${h-26} L${pts[0][0].toFixed(1)},${h-26}Z`;
+  const ticks=[lo,Math.round((lo+hi)/2),hi].map(g=>`<line x1="26" x2="${w-20}" y1="${Y(g)}" y2="${Y(g)}" stroke="var(--rule2)"/><text x="0" y="${Y(g)+3}" font-size="10" fill="var(--mute)">${g}%</text>`).join('');
+  const meta=`<line x1="26" x2="${w-20}" y1="${Y(META_ACUR)}" y2="${Y(META_ACUR)}" stroke="var(--acc)" stroke-dasharray="4 4" opacity=".6"/>`;
+  const xl=labels.map((l,i)=>`<text x="${X(i)}" y="${h-8}" font-size="10" fill="var(--mute)" text-anchor="middle">${l}</text>`).join('');
+  const dots=pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?4:2.5}" fill="var(--sheet)" stroke="var(--acc)" stroke-width="2"><title>${labels[i]}: ${p1(vals[i])}%</title></circle>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Acuracidade por auditoria">${ticks}${meta}<path d="${area}" fill="var(--acc)" opacity=".08"/><path d="${d}" fill="none" stroke="var(--acc)" stroke-width="2.4" stroke-linejoin="round"/>${dots}${xl}</svg>`;
+}
+function reincidencias(finDesc){
+  const porAud={}; DIVS.filter(i=>i.status==='falta').forEach(i=>{ (porAud[i.auditoria_id]=porAud[i.auditoria_id]||{})[i.id_produto]=i; });
+  const out=[];
+  const ult=porAud[finDesc[0]&&finDesc[0].id]||{};
+  Object.keys(ult).forEach(pid=>{
+    let streak=0; for(const a of finDesc){ if(porAud[a.id]&&porAud[a.id][pid]) streak++; else break; }
+    if(streak>=2){ const i=ult[pid]; out.push({nome:i.nome,categoria:i.categoria,streak,dif:i.qtd_esperada-(i.qtd_fisica||0)}); }
+  });
+  return out.sort((a,b)=>b.streak-a.streak||b.dif-a.dif).slice(0,6);
+}
+async function renderDashboard(){
+  await Promise.all([loadProdutos(),loadAuditorias(),loadDivs()]);
+  const fin=AUDITORIAS.filter(a=>a.status==='finalizada').sort((a,b)=>b.numero-a.numero);
+  const aberta=AUDITORIAS.find(a=>a.status==='aberta');
+  const ult10=fin.slice(0,10).reverse();
+  const res=await resumosDe(ult10.concat(aberta?[aberta]:[]));
+  const ultima=fin[0], rUlt=ultima&&res[ultima.id];
+  // subtítulo
+  const prox=AUDITORIAS.map(a=>a.proxima_data).filter(Boolean).sort().pop();
+  let sub=ultima?`Última auditoria finalizada em ${fmtDate(ultima.data_auditoria)}`:'Nenhuma auditoria finalizada ainda';
+  if(prox){ const d=diasEntre(hojeISO(),prox); sub+=` · próxima prevista para ${fmtDate(prox)} (${d===0?'hoje':d>0?'em '+d+' dia'+(d>1?'s':''):'atrasada há '+(-d)+' dia'+(d<-1?'s':'')})`; }
+  $('#dashSub').textContent=sub;
+  // KPIs
+  const valorEst=PRODUTOS.reduce((s,p)=>s+p.valor*p.estoque,0), unid=PRODUTOS.reduce((s,p)=>s+Number(p.estoque),0);
+  let vF=0,vE=0; DIVS.forEach(i=>{ const d=(i.qtd_fisica||0)-i.qtd_esperada; if(i.status==='falta') vF+=-d*i.valor; else vE+=d*i.valor; });
+  const kpis=`<div class="panel kpis">
+    <div><div class="l">Valor do estoque</div><div class="v">${money0(valorEst)}</div></div>
+    <div><div class="l">Itens cadastrados</div><div class="v">${num(PRODUTOS.length)}</div></div>
+    <div><div class="l">Unidades</div><div class="v">${num(unid)}</div></div>
+    <div><div class="l">Faltas acumuladas</div><div class="v down">${money0(vF)}</div></div>
+    <div><div class="l">Excessos acumulados</div><div class="v" style="color:var(--exc)">${money0(vE)}</div></div></div>`;
+  // hero acuracidade
+  const vals=ult10.map(a=>acur(res[a.id])).filter(v=>v!=null);
+  const labs=ult10.filter(a=>acur(res[a.id])!=null).map(a=>'#'+a.numero);
+  const aUlt=acur(rUlt); const aPrev=fin[1]?acur(res[fin[1].id]):null;
+  let delta='';
+  if(aUlt!=null&&aPrev!=null){ const dd=aUlt-aPrev; delta=`<span class="badge ${dd>=0?'b-ok':'b-falta'}"><i></i>${dd>=0?'+':'−'}${p1(Math.abs(dd))} pp vs. #${fin[1].numero}</span>`; }
+  const hero=!rUlt?`<div class="panel" style="padding:26px"><div class="empty">Finalize a primeira auditoria para ver a acuracidade do estoque.</div></div>`:`
+   <div class="panel" style="padding:24px 26px">
+    <div style="display:flex;gap:30px;align-items:center;flex-wrap:wrap">
+     <div><div style="color:var(--ink2);font-weight:600;margin-bottom:6px">Acuracidade do estoque</div>
+      <div class="hero-n">${p1(aUlt)}<small>%</small></div>
+      <div style="margin-top:10px">${delta} <span class="mute" style="margin-left:6px">meta ${META_ACUR}%</span></div></div>
+     <div style="flex:1;min-width:260px">${spark(vals,labs)}</div></div>
+    <div style="margin-top:20px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--ink2);font-size:12.5px;margin-bottom:7px"><span><b style="color:var(--ink)">Auditoria #${ultima.numero}</b> · ${num(rUlt.contados)} itens contados</span><span>Faltaram ${money0(rUlt.vFalta)} · sobraram ${money0(rUlt.vExc)}</span></div>
+    ${reconBar(rUlt)}
+    <div style="display:flex;gap:18px;margin-top:9px;font-size:12.5px;color:var(--ink2);flex-wrap:wrap"><span><b class="up">●</b> Conferem ${num(rUlt.ok)}</span><span><b class="down">●</b> Em falta ${num(rUlt.falta)}</span><span><b style="color:#d89a2b">●</b> Em excesso ${num(rUlt.exc)}</span></div>
+   </div>`;
+  // card auditoria em andamento
+  let live;
+  if(aberta){
+    const r=res[aberta.id]; const pct=r&&r.total?Math.round(r.contados/r.total*100):0;
+    let pessoas='';
+    try{
+      const atr=aberta.atribuicoes||{}; const pess={};
+      Object.keys(atr).forEach(c=>{ (pess[atr[c]]=pess[atr[c]]||[]).push(c); });
+      if(Object.keys(pess).length){
+        const its=await fetchAll(()=>sb.from('aud_itens_auditoria').select('id,categoria,qtd_fisica').eq('auditoria_id',aberta.id).order('id'));
+        pessoas=Object.keys(pess).map(n=>{
+          const sc=its.filter(i=>pess[n].includes(i.categoria)); const c=sc.filter(i=>i.qtd_fisica!=null).length; const pc=sc.length?Math.round(c/sc.length*100):0;
+          return `<div class="pbar"><span class="av" style="margin:0">${esc(sigla(n))}</span><div><div style="font-weight:600;font-size:13px">${esc(n)} <span class="mute" style="font-weight:500">· ${esc(pess[n].slice(0,3).join(', '))}${pess[n].length>3?' +'+(pess[n].length-3):''}</span></div><div class="recon"><i class="r-a" style="width:${pc}%"></i></div></div><span class="num">${pc}%</span></div>`;
+        }).join('');
+      }
+    }catch(e){}
+    const ha=aberta.created_at?Math.max(0,Math.round((Date.now()-new Date(aberta.created_at))/60000)):null;
+    live=`<div class="panel" style="padding:22px 24px;border-color:var(--exc)">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="badge b-live"><i></i>Auditoria #${aberta.numero} em andamento</span><span class="sp"></span>${ha!=null?`<span class="mute" style="font-size:12.5px">${ha<90?'há '+ha+' min':ha<2880?'há '+Math.round(ha/60)+' h':'há '+Math.round(ha/1440)+' dias'}</span>`:''}</div>
+      <div class="serif" style="font-size:44px;margin:14px 0 2px;font-weight:600;letter-spacing:-1px">${pct}%</div>
+      <div style="color:var(--ink2);margin-bottom:12px">${num(r?r.contados:0)} de ${num(r?r.total:0)} itens contados</div>
+      ${reconBar(r,12)}
+      ${pessoas?`<div style="margin-top:18px;display:grid;gap:12px">${pessoas}</div>`:''}
+      <div style="margin-top:18px"><button class="btn p" style="width:100%;justify-content:center" onclick="abrirContagem('${aberta.id}')">Continuar contagem</button></div></div>`;
+  } else {
+    live=`<div class="panel" style="padding:26px;display:flex;flex-direction:column;justify-content:center;gap:12px"><div style="font-weight:650;font-size:15px">Nenhuma auditoria em andamento</div><div class="mute">Crie uma nova auditoria para carregar o estoque atual como quantidade esperada.</div><div><button class="btn p" onclick="novaAud()">+ Nova auditoria</button></div></div>`;
+  }
+  // perda por categoria
+  const porCat={}; DIVS.filter(i=>i.status==='falta').forEach(i=>{ const c=i.categoria||'Sem categoria'; porCat[c]=(porCat[c]||0)+(i.qtd_esperada-(i.qtd_fisica||0))*i.valor; });
+  const cats=Object.entries(porCat).sort((a,b)=>b[1]-a[1]).slice(0,6), mx=cats.length?cats[0][1]:1;
+  const catHtml=cats.length?cats.map(([n,v])=>`<div class="catrow"><span>${esc(n)}</span><div class="bar"><div style="width:${Math.max(2,v/mx*100).toFixed(0)}%;background:var(--falta)"></div></div><span class="num">${money0(v)}</span></div>`).join(''):'<div class="empty">Sem faltas registradas.</div>';
+  const rein=fin.length>=2?reincidencias(fin):[];
+  const reinHtml=rein.length?`<table><tbody>${rein.map(r=>`<tr><td>${esc(r.nome)}<div class="mute" style="font-size:12px">${esc(r.categoria||'')}</div></td><td class="r"><span class="badge b-falta"><i></i>${r.streak}ª auditoria seguida</span></td><td class="num down">−${num(r.dif)} un</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum item faltou em auditorias seguidas.</div>';
+  $('#dashBody').innerHTML=kpis+`<div class="grid2">${hero}${live}</div>
+    <div class="grid3"><div class="panel" style="padding-bottom:14px"><div class="ph"><h3>Onde está a perda</h3><span>faltas acumuladas por categoria, em R$</span></div><div style="padding:6px 20px 0">${catHtml}</div></div>
+    <div class="panel"><div class="ph"><h3>Itens que faltam de novo</h3><span>em falta em auditorias consecutivas</span></div><div style="margin-top:6px">${reinHtml}</div></div></div>`;
+  DASH_XLSX={res,fin,cats,rein};
+}
+$('#btnDashXlsx').onclick=()=>{
+  if(!DASH_XLSX){ toast('Aguarde o painel carregar.','err'); return; }
+  const {res,fin,cats,rein}=DASH_XLSX;
+  xlsx('resumo-auditorias.xlsx',{
+    'Auditorias':fin.map(a=>{ const r=res[a.id]||{}; return {'Nº':a.numero,'Data':fmtDate(a.data_auditoria),'Participantes':(a.participantes||[]).join(', '),'Itens contados':r.contados,'Confere':r.ok,'Faltas (itens)':r.falta,'Excessos (itens)':r.exc,'Acuracidade %':acur(r)!=null?+acur(r).toFixed(2):'', 'Faltas R$':+(r.vFalta||0).toFixed(2),'Excessos R$':+(r.vExc||0).toFixed(2)}; }),
+    'Perda por categoria':cats.map(([c,v])=>({'Categoria':c,'Faltas R$':+v.toFixed(2)})),
+    'Faltam de novo':rein.map(r=>({'Item':r.nome,'Categoria':r.categoria,'Auditorias seguidas':r.streak,'Falta (un)':r.dif}))
+  });
+};
+
+/* ================= ESTOQUE ================= */
+let EST_LIM=500;
+async function renderEstoque(){
+  await loadProdutos(true);
+  fillCats($('#estCat'), $('#estCat').value);
+  EST_LIM=500; drawEstoque();
+}
+$('#estBusca').oninput=()=>{EST_LIM=500;drawEstoque();}; $('#estCat').onchange=()=>{EST_LIM=500;drawEstoque();};
+$('#estMais').onclick=()=>{EST_LIM+=500;drawEstoque();};
+function drawEstoque(){
+  const q=$('#estBusca').value.toLowerCase(), cat=$('#estCat').value;
+  const list=PRODUTOS.filter(p=>(!cat||p.categoria===cat) && (!q||String(p.nome).toLowerCase().includes(q)||String(p.id_produto).includes(q)));
+  const tb=$('#estTable tbody');
+  tb.innerHTML=list.length? list.slice(0,EST_LIM).map(p=>`
+    <tr><td><b>${p.id_produto}</b></td><td>${esc(p.nome)}</td><td>${esc(p.categoria||'')}</td>
+    <td class="num">${money(p.valor)}</td><td class="num">${num(p.estoque)}</td><td class="num">${money(p.valor*p.estoque)}</td></tr>`).join('')
+    : `<tr><td colspan="6" class="empty">Nenhum item. Suba a planilha para começar.</td></tr>`;
+  $('#estMais').classList.toggle('hidden',list.length<=EST_LIM);
+  const totalVal=list.reduce((s,p)=>s+p.valor*p.estoque,0), un=list.reduce((s,p)=>s+Number(p.estoque),0);
+  $('#estCount').textContent=`mostrando ${Math.min(EST_LIM,list.length)} de ${list.length}`;
+  $('#estKpis').innerHTML=`<div><div class="l">Itens${cat||q?' (filtro)':''}</div><div class="v">${num(list.length)}</div></div><div><div class="l">Unidades</div><div class="v">${num(un)}</div></div><div><div class="l">Valor em estoque</div><div class="v">${money0(totalVal)}</div></div><div><div class="l">Categorias</div><div class="v">${catsEstoque().length}</div></div><div><div class="l">Sem estoque</div><div class="v">${num(list.filter(p=>!Number(p.estoque)).length)}</div></div>`;
+}
+
+/* ---- Upload / reconciliação ---- */
+$('#btnUpload').onclick=()=>$('#estFile').click();
+$('#estFile').onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  try{
+    const novos=await lerPlanilha(file);
+    if(!novos.length){ toast('Não encontrei itens válidos na planilha.','err'); return; }
+    await loadProdutos(true);
+    mostrarDiff(novos);
+  }catch(err){ toast('Erro ao ler planilha: '+err.message,'err'); }
+  e.target.value='';
+};
+async function lerPlanilha(file){
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const aoa=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  let hRow=-1, cId,cNome,cCat,cVal,cEst;
+  for(let r=0;r<Math.min(aoa.length,8);r++){
+    const row=(aoa[r]||[]).map(x=>String(x??'').trim().toLowerCase());
+    const iId=row.findIndex(x=>x==='id'||x==='código'||x==='codigo');
+    const iNome=row.findIndex(x=>x==='nome'||x==='produto'||x==='descrição'||x==='descricao');
+    if(iId>-1 && iNome>-1){ hRow=r; cId=iId; cNome=iNome;
+      cCat=row.findIndex(x=>x==='categoria');
+      cVal=row.findIndex(x=>x==='valor'||x==='preço'||x==='preco');
+      cEst=row.findIndex(x=>x==='estoque'||x==='qtd'||x==='quantidade'); break; }
+  }
+  if(hRow<0) throw new Error('cabeçalho (Id, Nome...) não encontrado');
+  if(cEst<0){
+    const next=(aoa[hRow+1]||[]).map(x=>String(x??'').trim().toLowerCase());
+    cEst=next.findIndex(x=>x==='estoque'||x==='qtd'||x==='quantidade');
+  }
+  const out=[];
+  for(let r=hRow+1;r<aoa.length;r++){
+    const row=aoa[r]; if(!row) continue;
+    const id=row[cId];
+    if(id==null||id==='') continue;
+    const idNum=Number(id); if(!Number.isFinite(idNum)) continue;
+    out.push({
+      id_produto:idNum,
+      nome:String(row[cNome]??'').trim(),
+      categoria:cCat>-1?String(row[cCat]??'').trim()||null:null,
+      valor:cVal>-1?parseValor(row[cVal]):0,
+      estoque:cEst>-1?parseValor(row[cEst]):0
+    });
+  }
+  return out;
+}
+let DIFF_PENDENTE=null;
+function mostrarDiff(novos){
+  const atual={}; PRODUTOS.forEach(p=>atual[p.id_produto]=p);
+  const novosMap={}; novos.forEach(p=>novosMap[p.id_produto]=p);
+  const entrou=[], saiu=[], subiu=[], desceu=[], preco=[];
+  novos.forEach(n=>{
+    const a=atual[n.id_produto];
+    if(!a){ entrou.push(n); return; }
+    if(n.estoque>a.estoque) subiu.push({...n,de:a.estoque,para:n.estoque});
+    else if(n.estoque<a.estoque) desceu.push({...n,de:a.estoque,para:n.estoque});
+    if(Number(n.valor)!==Number(a.valor)) preco.push({...n,de:a.valor,para:n.valor});
+  });
+  PRODUTOS.forEach(a=>{ if(!novosMap[a.id_produto]) saiu.push(a); });
+  DIFF_PENDENTE=novos;
+  const block=(titulo,arr,fmt)=>arr.length?`<div class="diff-block"><div class="head"><span>${titulo}</span><span>${arr.length}</span></div><div class="body">${arr.slice(0,300).map(fmt).join('')}${arr.length>300?`<div class="mute">... e mais ${arr.length-300}</div>`:''}</div></div>`:'';
+  $('#diffBody').innerHTML=
+    `<p style="margin:0 0 6px"><b>${num(novos.length)}</b> itens na planilha · Valor total ${money(novos.reduce((s,p)=>s+p.valor*p.estoque,0))}</p>`+
+    (block('Itens novos que entraram',entrou,i=>`<div><span>${i.id_produto} · ${esc(i.nome)}</span><span>${num(i.estoque)} un</span></div>`)+
+    block('Itens que saíram',saiu,i=>`<div><span>${i.id_produto} · ${esc(i.nome)}</span><span>${num(i.estoque)} un</span></div>`)+
+    block('Estoque aumentou',subiu,i=>`<div><span>${i.id_produto} · ${esc(i.nome)}</span><span>${num(i.de)} → ${num(i.para)}</span></div>`)+
+    block('Estoque diminuiu',desceu,i=>`<div><span>${i.id_produto} · ${esc(i.nome)}</span><span>${num(i.de)} → ${num(i.para)}</span></div>`)+
+    block('Preço alterado',preco,i=>`<div><span>${i.id_produto} · ${esc(i.nome)}</span><span>${money(i.de)} → ${money(i.para)}</span></div>`)
+    || '<p class="mute">Nenhuma diferença: a planilha é igual ao estoque atual.</p>');
+  openModal('ovDiff');
+}
+$('#btnConfirmDiff').onclick=async()=>{
+  if(!DIFF_PENDENTE) return;
+  await loadParticipantes();
+  const q=await askQuem({titulo:'Aplicar nova planilha',msg:'A planilha passa a valer como estoque oficial.',ok:'Aplicar'}); if(!q) return;
+  const btn=$('#btnConfirmDiff'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Aplicando...';
+  try{
+    const novos=DIFF_PENDENTE;
+    const novosIds=new Set(novos.map(n=>n.id_produto));
+    const rows=novos.map(n=>({...n,updated_at:new Date().toISOString()}));
+    await batch(rows,300,chunk=> sb.from('aud_produtos').upsert(chunk,{onConflict:'id_produto'}).then(r=>{if(r.error)throw r.error;}));
+    const remover=PRODUTOS.filter(p=>!novosIds.has(p.id_produto)).map(p=>p.id_produto);
+    if(remover.length){ await batch(remover,200,chunk=> sb.from('aud_produtos').delete().in('id_produto',chunk).then(r=>{if(r.error)throw r.error;})); }
+    DIFF_PENDENTE=null; closeModal('ovDiff'); PROD_DIRTY=true;
+    logAud('atualizou estoque',{quem:q.nome,detalhe:`${novos.length} itens na planilha, ${remover.length} removidos`});
+    toast('Estoque atualizado com a nova planilha.','ok');
+    await renderEstoque();
+  }catch(err){ toast('Erro ao aplicar: '+err.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent='Aplicar nova planilha'; }
+};
+
+/* ================= QUEM ESTÁ FAZENDO + REGISTRO ================= */
+let _quemRes=null,_quemSenha=false;
+function askQuem(o){
+  return new Promise(res=>{
+    $('#quemTitulo').textContent=o.titulo; $('#quemMsg').innerHTML=o.msg||'';
+    $('#quemSenhaWrap').classList.toggle('hidden',!o.senha); $('#quemSenha').value='';
+    let padrao=o.padrao; if(!padrao){ try{ padrao=localStorage.getItem('aud_quem')||''; }catch(e){} }
+    $('#quemNome').value=padrao||'';
+    $('#btnQuemOk').textContent=o.ok||'Confirmar'; $('#btnQuemOk').className='btn '+(o.danger?'danger':'p');
+    _quemSenha=!!o.senha; _quemRes=v=>{ closeModal('ovQuem'); _quemRes=null; res(v); };
+    openModal('ovQuem'); setTimeout(()=>$(padrao?(o.senha?'#quemSenha':'#btnQuemOk'):'#quemNome').focus(),60);
+  });
+}
+$('#btnQuemOk').onclick=()=>{
+  const nome=$('#quemNome').value.trim();
+  if(!nome){ toast('Diga quem está fazendo esta ação.','err'); $('#quemNome').focus(); return; }
+  if(_quemSenha && $('#quemSenha').value!==SENHA_EXCLUIR){ toast('Senha incorreta.','err'); $('#quemSenha').select(); return; }
+  try{ localStorage.setItem('aud_quem',nome); }catch(e){}
+  if(_quemRes) _quemRes({nome});
+};
+$('#btnQuemCancel').onclick=()=>{ if(_quemRes) _quemRes(null); };
+['quemNome','quemSenha'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#btnQuemOk').click(); } }));
+let _logAviso=false;
+async function logAud(acao,o){
+  o=o||{};
+  const {error}=await sb.from('aud_log').insert({acao,auditoria_id:o.id||null,auditoria_numero:o.numero||null,usuario:o.quem||null,detalhe:o.detalhe||null});
+  if(error && !_logAviso){ _logAviso=true; toast('Ação feita, mas o registro não foi gravado. Rode o SQL auditoria-novo.sql no Supabase.','err'); }
+}
+$('#btnLog').onclick=async()=>{
+  const box=$('#logBox'); box.classList.toggle('hidden');
+  if(box.classList.contains('hidden')) return;
+  $('#logBody').innerHTML='<div class="skel"><span class="spin"></span></div>';
+  const {data,error}=await sb.from('aud_log').select('*').order('created_at',{ascending:false}).limit(40);
+  if(error){ $('#logBody').innerHTML=`<div class="empty">Registro indisponível (${esc(error.message)}). Rode o SQL auditoria-novo.sql.</div>`; return; }
+  $('#logBody').innerHTML=(data||[]).length?`<table><thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Auditoria</th><th>Detalhe</th></tr></thead><tbody>${data.map(l=>{ const d=new Date(l.created_at); return `<tr><td class="num">${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</td><td><b>${esc(l.usuario||'-')}</b></td><td>${esc(l.acao)}</td><td>${l.auditoria_numero?'#'+l.auditoria_numero:'-'}</td><td class="mute">${esc(l.detalhe||'')}</td></tr>`; }).join('')}</tbody></table>`:'<div class="empty">Nenhuma ação registrada ainda.</div>';
+};
+
+/* ================= HISTÓRICO ================= */
+let HIST_ROWS=[];
+async function renderAuditorias(){
+  await loadAuditorias();
+  $('#audTable tbody').innerHTML='<tr><td colspan="8" class="skel"><span class="spin"></span> Carregando...</td></tr>';
+  const res=await resumosDe(AUDITORIAS);
+  HIST_ROWS=AUDITORIAS.map(a=>({a,r:res[a.id]}));
+  drawHistorico();
+  const accs=AUDITORIAS.filter(a=>a.status==='finalizada').slice(0,12).map(a=>acur(res[a.id])).filter(v=>v!=null);
+  $('#histSub').textContent=`${AUDITORIAS.length} auditoria${AUDITORIAS.length===1?'':'s'}`+(accs.length?` · acuracidade média das últimas ${accs.length}: ${p1(accs.reduce((s,v)=>s+v,0)/accs.length)}%`:'');
+}
+['#histBusca','#histStatus'].forEach(s=>{ $(s).oninput=drawHistorico; $(s).onchange=drawHistorico; });
+function drawHistorico(){
+  const q=$('#histBusca').value.toLowerCase().trim(), st=$('#histStatus').value;
+  const list=HIST_ROWS.filter(({a})=>(!st||a.status===st)&&(!q||('#'+a.numero).includes(q)||String(a.numero)===q||(a.participantes||[]).join(' ').toLowerCase().includes(q)||String(a.observacao||'').toLowerCase().includes(q)));
+  const fins=AUDITORIAS.filter(a=>a.status==='finalizada');
+  $('#audTable tbody').innerHTML=list.length?list.map(({a,r})=>{
+    const ac=acur(r); const idx=fins.findIndex(x=>x.id===a.id); const prev=idx>=0&&fins[idx+1]?HIST_ROWS.find(x=>x.a.id===fins[idx+1].id):null; const ap=prev?acur(prev.r):null;
+    const dl=(ac!=null&&ap!=null)?`<div style="font-size:12px" class="${ac>=ap?'up':'down'}">${ac>=ap?'▲':'▼'} ${p1(Math.abs(ac-ap))} pp</div>`:'';
+    const live=a.status==='aberta';
+    const acTxt=ac==null?'<span class="mute">—</span>':`<b class="serif" style="font-size:18px">${p1(ac)}%</b>${dl}`;
+    return `<tr>
+      <td><b>#${a.numero}</b><div class="mute" style="font-size:12px">${fmtDate(a.data_auditoria)}</div></td>
+      <td>${avatars(a.participantes)}</td>
+      <td><div style="width:190px;max-width:100%">${reconBar(r)}</div>${live&&r?`<div class="mute" style="font-size:11.5px;margin-top:4px">${num(r.contados)} de ${num(r.total)} contados</div>`:''}</td>
+      <td class="num">${live?'<span class="mute">—</span>':acTxt}</td>
+      <td class="num ${r&&r.vFalta?'down':'mute'}">${r?(r.vFalta?money0(r.vFalta):'—'):'…'}</td>
+      <td class="num" style="color:${r&&r.vExc?'var(--exc)':'var(--mute)'}">${r?(r.vExc?money0(r.vExc):'—'):'…'}</td>
+      <td><span class="badge ${live?'b-live':'b-ok'}"><i></i>${live?'Em curso':'Finalizada'}</span></td>
+      <td class="r" style="white-space:nowrap">
+        ${live?`<button class="btn p sm" onclick="abrirContagem('${a.id}')">Continuar</button>`:`<button class="btn sm" onclick="abrirRelatorio('${a.id}')">Relatório</button>`}
+        <span class="menu"><button onclick="toggleMenu(event,this)" aria-label="Mais ações">⋯</button><span class="dd">
+          ${live?`<button onclick="abrirRelatorio('${a.id}')">Relatório parcial</button>`:`<button onclick="abrirContagem('${a.id}')">Ver contagem</button>`}
+          ${a.status==='finalizada'?`<button onclick="reabrirAuditoria('${a.id}',${a.numero})">Reabrir</button>`:''}
+          <button class="dg" onclick="excluirAuditoria('${a.id}',${a.numero})">Excluir</button></span></span>
+      </td></tr>`;}).join(''):`<tr><td colspan="8" class="empty">${HIST_ROWS.length?'Nada encontrado com esse filtro.':'Nenhuma auditoria. Crie a primeira.'}</td></tr>`;
+}
+function toggleMenu(e,btn){ e.stopPropagation(); const m=btn.parentElement, was=m.classList.contains('open'); $$('.menu.open').forEach(x=>x.classList.remove('open')); if(!was) m.classList.add('open'); }
+document.addEventListener('click',()=>$$('.menu.open').forEach(x=>x.classList.remove('open')));
+
+/* ---- relatório ---- */
+let REL=null;
+async function abrirRelatorio(audId){
+  const {data:aud}=await sb.from('aud_auditorias').select('*').eq('id',audId).single();
+  if(!aud){ toast('Auditoria não encontrada.','err'); return; }
+  toast('Montando relatório...');
+  let lista=[]; try{ lista=await fetchAll(()=>sb.from('aud_itens_auditoria').select('*').eq('auditoria_id',audId).order('categoria').order('nome').order('id')); }catch(e){ toast('Erro: '+e.message,'err'); return; }
+  const contados=lista.filter(i=>i.qtd_fisica!=null);
+  const faltas=lista.filter(i=>i.status==='falta'), excessos=lista.filter(i=>i.status==='excesso');
+  const oks=lista.filter(i=>i.status==='ok').length;
+  const valorContado=contados.reduce((s,i)=>s+(i.qtd_fisica||0)*i.valor,0);
+  const valorFalta=faltas.reduce((s,i)=>s+(i.qtd_esperada-(i.qtd_fisica||0))*i.valor,0);
+  const valorExcesso=excessos.reduce((s,i)=>s+((i.qtd_fisica||0)-i.qtd_esperada)*i.valor,0);
+  const ac=contados.length?oks/contados.length*100:null;
+  REL={aud,faltas,excessos,lista};
+  $('#relTitulo').textContent=`Relatório · Auditoria #${aud.numero}`;
+  $('#relSub').textContent=`${fmtDate(aud.data_auditoria)} · Feita por: ${(aud.participantes||[]).join(', ')||'não informado'}`+(aud.observacao?` · Obs: ${aud.observacao}`:'')+(aud.status==='aberta'?' · PARCIAL (auditoria em curso)':'');
+  $('#relCards').innerHTML=`
+    <div class="c"><div class="l">Itens contados</div><div class="v">${num(contados.length)} / ${num(lista.length)}</div></div>
+    <div class="c"><div class="l">Acuracidade</div><div class="v">${ac==null?'—':p1(ac)+'%'}</div></div>
+    <div class="c"><div class="l">Valor do estoque contado</div><div class="v">${money(valorContado)}</div></div>
+    <div class="c"><div class="l">Itens em falta</div><div class="v down">${money(valorFalta)}</div></div>
+    <div class="c"><div class="l">Itens em excesso</div><div class="v" style="color:var(--exc)">${money(valorExcesso)}</div></div>
+    <div class="c"><div class="l">Em falta (itens)</div><div class="v">${num(faltas.length)}</div></div>
+    <div class="c"><div class="l">Em excesso (itens)</div><div class="v">${num(excessos.length)}</div></div>
+    <div class="c"><div class="l">Confere</div><div class="v">${num(oks)}</div></div>`;
+  $('#relFaltaTable tbody').innerHTML=faltas.length?faltas.map(i=>`
+    <tr><td>${i.id_produto}</td><td>${esc(i.nome)}</td><td>${esc(i.categoria||'')}</td>
+    <td class="num">${num(i.qtd_esperada)}</td><td class="num">${num(i.qtd_fisica||0)}</td>
+    <td class="num down">${num(i.qtd_esperada-(i.qtd_fisica||0))}</td>
+    <td class="num down">${money((i.qtd_esperada-(i.qtd_fisica||0))*i.valor)}</td>
+    <td>${fmtCodigos(i.codigo_barras)}</td></tr>`).join(''):`<tr><td colspan="8" class="empty">Nenhum item em falta.</td></tr>`;
+  $('#relExcTable tbody').innerHTML=excessos.length?excessos.map(i=>`
+    <tr><td>${i.id_produto}</td><td>${esc(i.nome)}</td><td>${esc(i.categoria||'')}</td>
+    <td class="num">${num(i.qtd_esperada)}</td><td class="num">${num(i.qtd_fisica||0)}</td>
+    <td class="num" style="color:var(--exc)">${num((i.qtd_fisica||0)-i.qtd_esperada)}</td>
+    <td class="num" style="color:var(--exc)">${money(((i.qtd_fisica||0)-i.qtd_esperada)*i.valor)}</td></tr>`).join(''):`<tr><td colspan="7" class="empty">Nenhum item em excesso.</td></tr>`;
+  openModal('ovRelatorio');
+}
+$('#btnRelXlsx').onclick=()=>{
+  if(!REL) return;
+  xlsx(`auditoria-${REL.aud.numero}.xlsx`,{
+    'Faltas':REL.faltas.map(i=>({'Código':i.id_produto,'Item':i.nome,'Categoria':i.categoria,'Esperado':i.qtd_esperada,'Físico':i.qtd_fisica||0,'Falta':i.qtd_esperada-(i.qtd_fisica||0),'Valor R$':+((i.qtd_esperada-(i.qtd_fisica||0))*i.valor).toFixed(2),'Cód. barras':(i.codigo_barras||'').replace(/\n/g,' | ')})),
+    'Excessos':REL.excessos.map(i=>({'Código':i.id_produto,'Item':i.nome,'Categoria':i.categoria,'Esperado':i.qtd_esperada,'Físico':i.qtd_fisica||0,'Excesso':(i.qtd_fisica||0)-i.qtd_esperada,'Valor R$':+(((i.qtd_fisica||0)-i.qtd_esperada)*i.valor).toFixed(2)})),
+    'Todos os itens':REL.lista.map(i=>({'Código':i.id_produto,'Item':i.nome,'Categoria':i.categoria,'Esperado':i.qtd_esperada,'Físico':i.qtd_fisica,'Situação':STATUS_TXT[i.status]||i.status}))
+  });
+};
+
+/* ---- reabrir / excluir ---- */
+async function updAud(id,patch){
+  let {error}=await sb.from('aud_auditorias').update(patch).eq('id',id);
+  if(error && 'resumo' in patch && /resumo/i.test(error.message)){ RESUMO_COL=false; const p={...patch}; delete p.resumo; ({error}=await sb.from('aud_auditorias').update(p).eq('id',id)); }
+  return {error};
+}
+async function reabrirAuditoria(id, numero){
+  await loadParticipantes();
+  const q=await askQuem({titulo:`Reabrir auditoria #${numero}`,msg:'Se ela já foi finalizada, o estoque oficial já recebeu a contagem. Reabrir <b>não desfaz isso</b>: só permite continuar editando. Ao finalizar de novo, o estoque é atualizado outra vez.',ok:'Reabrir'});
+  if(!q) return;
+  const {error}=await updAud(id,{status:'aberta',finalizado_em:null,resumo:null});
+  if(error){ toast('Erro ao reabrir: '+error.message,'err'); return; }
+  delete RESUMOS[id]; DIV_DIRTY=true;
+  logAud('reabriu',{id,numero,quem:q.nome});
+  toast('Auditoria #'+numero+' reaberta.','ok');
+  renderAuditorias();
+}
+async function excluirAuditoria(id, numero){
+  await loadParticipantes();
+  const q=await askQuem({titulo:`Excluir auditoria #${numero}`,msg:'A auditoria e todos os itens contados serão apagados. <b>Não tem volta.</b>',ok:'Excluir',danger:true,senha:true});
+  if(!q) return;
+  const {error}=await sb.from('aud_auditorias').delete().eq('id',id);
+  if(error){ toast('Erro ao excluir: '+error.message,'err'); return; }
+  try{ if(localStorage.getItem('aud_open')===id) localStorage.removeItem('aud_open'); }catch(e){}
+  delete RESUMOS[id]; DIV_DIRTY=true;
+  logAud('excluiu',{id,numero,quem:q.nome});
+  toast('Auditoria #'+numero+' excluída.','ok');
+  renderAuditorias();
+}
+
+/* ================= NOVA AUDITORIA ================= */
+async function novaAud(){
+  await Promise.all([loadProdutos(true),loadParticipantes(),loadAuditorias()]);
+  if(!PRODUTOS.length){ toast('Suba o estoque (planilha) antes de auditar.','err'); showTab('estoque'); return; }
+  renderParticList(); renderAssign();
+  $('#novaQtdItens').textContent=num(PRODUTOS.length);
+  const hoje=hojeISO();
+  $('#audData').value=hoje; $('#audObs').value='';
+  // próxima auditoria sugerida pelo intervalo médio das últimas
+  const datas=AUDITORIAS.map(a=>a.data_auditoria).filter(Boolean).sort().slice(-6);
+  let prox='',hint='';
+  if(datas.length>=2){ const iv=[]; for(let i=1;i<datas.length;i++) iv.push(diasEntre(datas[i-1],datas[i])); const m=Math.round(iv.reduce((s,v)=>s+v,0)/iv.length); if(m>0){ const d=new Date(hoje+'T12:00:00'); d.setDate(d.getDate()+m); prox=d.toISOString().slice(0,10); hint=`Sugerida pelo intervalo médio das últimas auditorias (${m} dias).`; } }
+  $('#audProxima').value=prox; $('#proxHint').textContent=hint;
+  openModal('ovNova');
+}
+$('#btnNovaAud').onclick=novaAud; $('#btnNovaAud0').onclick=novaAud;
+function renderParticList(){
+  const sel=new Set($$('#particList input:checked').map(i=>i.value));
+  $('#particList').innerHTML=PARTICIPANTES.map(p=>`<label><input type="checkbox" value="${esc(p.nome)}" ${sel.has(p.nome)?'checked':''}> ${esc(p.nome)}</label>`).join('')
+    || '<span class="mute" style="font-size:13px">Nenhuma pessoa cadastrada ainda.</span>';
+}
+function selectedPartic(){ return $$('#particList input:checked').map(i=>i.value); }
+function renderAssign(){
+  const cats=catsEstoque(), people=selectedPartic(), box=$('#assignBox');
+  if(!people.length || !cats.length){ $('#assignField').style.display='none'; box.innerHTML=''; return; }
+  $('#assignField').style.display='';
+  const prev={}; box.querySelectorAll('select').forEach(s=>prev[s.dataset.cat]=s.value);
+  const ult=(AUDITORIAS.find(a=>a.atribuicoes&&Object.keys(a.atribuicoes).length)||{}).atribuicoes||{};
+  let sugeriu=false;
+  box.innerHTML=cats.map(c=>{
+    let cur=prev[c]; if(cur===undefined){ cur=people.includes(ult[c])?ult[c]:''; if(cur) sugeriu=true; }
+    const opts=['<option value="">Todos</option>'].concat(people.map(p=>`<option ${cur===p?'selected':''}>${esc(p)}</option>`)).join('');
+    return `<div class="cat">${esc(c)}</div><select data-cat="${esc(c)}">${opts}</select>`;
+  }).join('');
+  $('#assignHint').textContent=sugeriu?'Sugerido a partir da última auditoria. Ajuste se precisar.':'Cada pessoa vê só as categorias dela ao abrir a contagem, sempre com opção de ver todas.';
+}
+$('#particList').addEventListener('change', renderAssign);
+$('#btnAddPartic').onclick=async()=>{
+  const nome=$('#novoPartic').value.trim(); if(!nome) return;
+  const {error}=await sb.from('aud_participantes').upsert({nome},{onConflict:'nome'});
+  if(error){ toast('Erro: '+error.message,'err'); return; }
+  $('#novoPartic').value=''; await loadParticipantes(); renderParticList();
+  const cb=$$('#particList input').find(i=>i.value===nome); if(cb) cb.checked=true;
+  renderAssign();
+};
+$('#btnCriarAud').onclick=async()=>{
+  const participantes=selectedPartic();
+  if(!participantes.length){ toast('Selecione ao menos um participante.','err'); return; }
+  const btn=$('#btnCriarAud'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Criando...';
+  try{
+    const atribuicoes={};
+    $('#assignBox').querySelectorAll('select').forEach(s=>{ if(s.value) atribuicoes[s.dataset.cat]=s.value; });
+    const {data:aud,error}=await sb.from('aud_auditorias').insert({
+      data_auditoria:$('#audData').value||hojeISO(),
+      proxima_data:$('#audProxima').value||null,
+      participantes, atribuicoes, observacao:$('#audObs').value.trim()||null, status:'aberta'
+    }).select().single();
+    if(error) throw error;
+    const itens=PRODUTOS.map(p=>({
+      auditoria_id:aud.id, id_produto:p.id_produto, nome:p.nome, categoria:p.categoria,
+      valor:p.valor, qtd_esperada:p.estoque, qtd_fisica:null, status:'pendente'
+    }));
+    await batch(itens,300,chunk=> sb.from('aud_itens_auditoria').insert(chunk).then(r=>{if(r.error)throw r.error;}));
+    closeModal('ovNova'); DIV_DIRTY=true;
+    logAud('criou',{id:aud.id,numero:aud.numero,quem:participantes.join(', '),detalhe:`${itens.length} itens`});
+    toast('Auditoria #'+aud.numero+' criada.','ok');
+    abrirContagem(aud.id);
+  }catch(err){ toast('Erro ao criar: '+err.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent='Criar e abrir'; }
+};
+
+/* ================= CONTAGEM ================= */
+let CONT_ST='', CONT_LIM=300, _savedT=null;
+async function abrirContagem(audId){
+  const {data:aud}=await sb.from('aud_auditorias').select('*').eq('id',audId).single();
+  if(!aud){ try{ localStorage.removeItem('aud_open'); }catch(e){} showTab('auditorias'); return; }
+  let itens=[];
+  try{ itens=await fetchAll(()=>sb.from('aud_itens_auditoria').select('*').eq('auditoria_id',audId).order('categoria').order('nome').order('id')); }
+  catch(e){ toast('Erro ao carregar itens: '+e.message,'err'); return; }
+  const _cmp=new Intl.Collator('pt-BR',{numeric:true,sensitivity:'base'}); itens.sort((a,b)=>_cmp.compare(a.categoria||'',b.categoria||'')||_cmp.compare(a.nome||'',b.nome||''));   // ordem natural (item 8 antes do 56)
+  RECONTAR_OK = itens.length? ('recontar' in itens[0]) : true;
+  CONT={auditoria:aud, itens, atribuicoes:aud.atribuicoes||{}};
+  try{ if(aud.status==='aberta') localStorage.setItem('aud_open', aud.id); else localStorage.removeItem('aud_open'); }catch(e){}
+  $('#contTitulo').textContent=`Auditoria #${aud.numero}`;
+  $('#contResp').innerHTML='<option value="">Todas as categorias</option>'+(aud.participantes||[]).map(p=>`<option>${esc(p)}</option>`).join('');
+  let saved=''; try{ saved=localStorage.getItem('aud_resp_'+aud.id)||''; }catch(e){}
+  $('#contResp').value=(aud.participantes||[]).includes(saved)?saved:'';
+  $('#respBar').style.display=Object.keys(CONT.atribuicoes).length>0?'':'none';
+  CONT_ST=''; CONT_LIM=300; $('#contBusca').value='';
+  refreshContCat(); updateRespHint();
+  $('#btnFinalizar').classList.toggle('hidden',aud.status==='finalizada');
+  showTab('contagem');
+  trackPresence();
+  drawContagem();
+}
+$('#btnVoltarAud').onclick=()=>showTab('auditorias');
+$('#contBusca').oninput=()=>{CONT_LIM=300;drawContagem();}; $('#contCat').onchange=()=>{CONT_LIM=300;drawContagem();};
+$('#contResp').onchange=()=>{ if(CONT){ try{ localStorage.setItem('aud_resp_'+CONT.auditoria.id, $('#contResp').value); }catch(e){} } refreshContCat(); updateRespHint(); trackPresence(); CONT_LIM=300; drawContagem(); };
+$('#btnVerTodas').onclick=()=>{ $('#contResp').value=''; if(CONT){ try{ localStorage.setItem('aud_resp_'+CONT.auditoria.id,''); }catch(e){} } refreshContCat(); updateRespHint(); trackPresence(); CONT_LIM=300; drawContagem(); };
+$('#contMais').onclick=()=>{ CONT_LIM+=300; drawContagem(); };
+function contAllCats(){ return [...new Set(CONT.itens.map(i=>i.categoria).filter(Boolean))].sort(); }
+function currentAllowedCats(){
+  const resp=$('#contResp').value; if(!resp) return null;
+  const a=Object.keys(CONT.atribuicoes||{}).filter(c=>CONT.atribuicoes[c]===resp);
+  return a.length?a:null;
+}
+function refreshContCat(){
+  const allowed=currentAllowedCats(), cats=allowed||contAllCats(), cur=$('#contCat').value;
+  $('#contCat').innerHTML='<option value="">'+(allowed?'Minhas categorias':'Todas as categorias')+'</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  $('#contCat').value=(cur && cats.includes(cur))?cur:'';
+}
+function updateRespHint(){
+  if(!CONT) return;
+  const resp=$('#contResp').value, allowed=currentAllowedCats();
+  if(resp && allowed){ const n=CONT.itens.filter(i=>allowed.includes(i.categoria)).length; $('#respHint').textContent=`${allowed.length} categoria(s) · ${n} item(ns)`; }
+  else if(resp) $('#respHint').textContent='sem categoria atribuída · vendo todas';
+  else $('#respHint').textContent='';
+}
+function statusItem(esp,fis){ if(fis==null||fis==='') return 'pendente'; fis=Number(fis); if(fis<esp) return 'falta'; if(fis>esp) return 'excesso'; return 'ok'; }
+function escopo(){ const al=currentAllowedCats(); return al?CONT.itens.filter(i=>al.includes(i.categoria)):CONT.itens; }
+function sugereRecontar(i){
+  if(!RECONTAR_OK||CONT.auditoria.status==='finalizada') return false;
+  if(i.status!=='falta'&&i.status!=='excesso') return false;
+  const d=Math.abs(Number(i.qtd_fisica)-i.qtd_esperada); return d/Math.max(i.qtd_esperada,1)>=RECONTAR_PCT;
+}
+function rowHTML(i,fin){
+  const dif=i.qtd_fisica==null?null:Number(i.qtd_fisica)-i.qtd_esperada;
+  const dt=dif==null?'—':(dif>0?'+'+num(dif):dif<0?'−'+num(Math.abs(dif)):'0');
+  const dcol=i.status==='falta'?'var(--falta)':i.status==='excesso'?'var(--exc)':'var(--ink2)';
+  let btn='';
+  if(RECONTAR_OK&&!fin){
+    if(i.recontar) btn=`<button class="btn sm" data-act="recontado" title="Marcar como recontado">✓ Recontado</button>`;
+    else if(sugereRecontar(i)) btn=`<button class="btn sm" data-act="recontar" title="Pedir recontagem deste item">↻ Recontar</button>`;
+  }
+  const rec=i.recontar?` <span class="badge b-rec"><i></i>recontar</span>`:'';
+  return `<div class="c-code">${i.id_produto}</div>
+    <div class="c-item"><div class="nm">${esc(i.nome)}</div><div class="ct">${esc(i.categoria||'')}</div>${i.status==='falta'?`<textarea class="cb" rows="2" placeholder="Código de barras (1 por linha)" ${fin?'disabled':''}>${esc(i.codigo_barras||'')}</textarea>`:''}</div>
+    <div class="c-esp" data-l="Esperado">${num(i.qtd_esperada)}</div>
+    <div class="c-step"><div class="step"><button type="button" data-d="-1" ${fin?'disabled':''} aria-label="menos um">−</button><input class="qtd" type="number" inputmode="numeric" step="1" min="0" value="${i.qtd_fisica??''}" ${fin?'disabled':''} aria-label="Quantidade contada"><button type="button" data-d="1" ${fin?'disabled':''} aria-label="mais um">+</button></div></div>
+    <div class="c-dif" data-l="Diferença" style="color:${dcol}">${dt}</div>
+    <div><span class="badge b-${i.status}"><i></i>${STATUS_TXT[i.status]||i.status}</span>${rec}</div>
+    <div class="r">${btn}</div>`;
+}
+function paintRow(tr,i){ tr.className='crow '+i.status; tr.innerHTML=rowHTML(i,CONT.auditoria.status==='finalizada'); }
+function drawChips(){
+  const sc=escopo();
+  const c={t:sc.length,pendente:0,falta:0,excesso:0,rec:0}; sc.forEach(i=>{ if(i.status in c) c[i.status]++; if(i.recontar) c.rec++; });
+  const chip=(k,l,n)=>`<button class="btn ${CONT_ST===k?'on':''}" data-st="${k}">${l} <span class="c">${num(n)}</span></button>`;
+  $('#contChips').innerHTML=chip('','Todos',c.t)+chip('pendente','A contar',c.pendente)+chip('falta','Faltas',c.falta)+chip('excesso','Excessos',c.excesso)+(RECONTAR_OK?chip('recontar','Recontar',c.rec):'');
+}
+$('#contChips').addEventListener('click',e=>{ const b=e.target.closest('[data-st]'); if(!b) return; CONT_ST=b.dataset.st; CONT_LIM=300; drawContagem(); });
+function drawProgresso(){
+  if(!CONT) return;
+  const sc=escopo(); const contados=sc.filter(i=>i.qtd_fisica!=null).length; const pct=sc.length?Math.round(contados/sc.length*100):0;
+  let vF=0,vE=0,nF=0,nE=0; sc.forEach(i=>{ if(i.qtd_fisica==null) return; const d=Number(i.qtd_fisica)-i.qtd_esperada; if(i.status==='falta'){ nF++; vF+=-d*i.valor; } else if(i.status==='excesso'){ nE++; vE+=d*i.valor; } });
+  const ok=sc.filter(i=>i.status==='ok').length, w=x=>sc.length?(x/sc.length*100).toFixed(2):0;
+  const porCat={}; sc.forEach(i=>{ const c=i.categoria||'Sem categoria'; (porCat[c]=porCat[c]||{t:0,c:0}).t++; if(i.qtd_fisica!=null) porCat[c].c++; });
+  const cats=Object.entries(porCat).sort((a,b)=>(a[1].c/a[1].t)-(b[1].c/b[1].t));
+  $('#contProgBox').innerHTML=`<div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px;flex-wrap:wrap"><span class="serif" style="font-size:34px;font-weight:600;letter-spacing:-1px">${pct}%</span><span style="color:var(--ink2)">${num(contados)} de ${num(sc.length)} itens${currentAllowedCats()?' das suas categorias':''}</span><span class="sp"></span><span class="badge b-falta"><i></i>${num(nF)} faltas · ${money0(vF)}</span><span class="badge b-excesso"><i></i>${num(nE)} excessos · ${money0(vE)}</span></div>
+    <div class="recon" style="height:12px"><i class="r-ok" style="width:${w(ok)}%"></i><i class="r-f" style="width:${w(nF)}%"></i><i class="r-e" style="width:${w(nE)}%"></i><i class="r-p" style="width:${w(sc.length-contados)}%"></i></div>
+    <div class="catgrid">${cats.slice(0,12).map(([n,v])=>{ const p=Math.round(v.c/v.t*100); return `<div><div class="t"><span>${esc(n)}</span><b class="num">${p}%</b></div><div class="recon" style="height:5px;margin-top:5px"><i class="r-a" style="width:${p}%"></i></div></div>`; }).join('')}</div>`;
+  const aud=CONT.auditoria;
+  $('#contSub').innerHTML=`${fmtDate(aud.data_auditoria)} · ${(aud.participantes||[]).map(esc).join(', ')}`+($('#contResp').value?` · você está contando como <b>${esc($('#contResp').value)}</b>`:'')+(aud.status==='finalizada'?' · <b>finalizada</b> (somente leitura)':'');
+}
+function drawContagem(){
+  if(!CONT) return;
+  const q=$('#contBusca').value.toLowerCase(), cat=$('#contCat').value;
+  const allowed=currentAllowedCats(), fin=CONT.auditoria.status==='finalizada';
+  const list=CONT.itens.filter(i=>
+    (!allowed||allowed.includes(i.categoria)) && (!cat||i.categoria===cat) &&
+    (!CONT_ST || (CONT_ST==='recontar'?i.recontar:i.status===CONT_ST)) &&
+    (!q||String(i.nome).toLowerCase().includes(q)||String(i.id_produto).includes(q)));
+  const box=$('#contList'); box.innerHTML='';
+  const frag=document.createDocumentFragment();
+  list.slice(0,CONT_LIM).forEach(i=>{ const tr=document.createElement('div'); tr.dataset.id=i.id; paintRow(tr,i); frag.appendChild(tr); });
+  box.appendChild(frag);
+  if(!list.length) box.innerHTML='<div class="empty">Nenhum item com esse filtro.</div>';
+  $('#contMais').classList.toggle('hidden',list.length<=CONT_LIM);
+  $('#contMais').textContent=`Mostrar mais itens (${num(list.length-CONT_LIM)} restantes)`;
+  drawChips(); drawProgresso();
+}
+function marcaSalvo(){ $('#savedTag').classList.remove('hidden'); $('#savedTxt').textContent='Salvo automaticamente · '+new Date().toLocaleTimeString('pt-BR'); }
+async function salvarCodigoBarras(id, val){
+  const item=CONT.itens.find(i=>i.id===id); if(!item) return;
+  const v=(val||'').trim()||null; item.codigo_barras=v;
+  const {error}=await sb.from('aud_itens_auditoria').update({codigo_barras:v}).eq('id',id);
+  if(error){ toast('Erro ao salvar código de barras: '+error.message,'err'); return; }
+  marcaSalvo();
+}
+async function salvarContagem(id, val, tr){
+  const item=CONT.itens.find(i=>i.id===id); if(!item) return;
+  const fis=(val===''||val==null)?null:Math.max(0,Math.round(Number(val)));
+  if(fis!=null&&!Number.isFinite(fis)) return;
+  if((item.qtd_fisica??null)===fis) { paintRow(tr,item); return; }
+  const status=statusItem(item.qtd_esperada,fis);
+  const patch={qtd_fisica:fis,status};
+  if(RECONTAR_OK && item.recontar){ patch.recontar=false; }   // contou de novo: sai da fila de recontagem
+  const antes={qtd_fisica:item.qtd_fisica,status:item.status,recontar:item.recontar};
+  Object.assign(item,patch);
+  paintRow(tr,item);
+  drawChips(); drawProgresso();
+  const {error}=await sb.from('aud_itens_auditoria').update(patch).eq('id',id);
+  if(error){
+    Object.assign(item,antes); if(tr.isConnected) paintRow(tr,item); drawChips(); drawProgresso();
+    toast('Erro ao salvar: '+error.message,'err'); return;
+  }
+  marcaSalvo();
+}
+async function recontarItem(id,tr,flag){
+  const item=CONT.itens.find(i=>i.id===id); if(!item) return;
+  const {error}=await sb.from('aud_itens_auditoria').update({recontar:flag}).eq('id',id);
+  if(error){ if(/recontar/i.test(error.message)){ RECONTAR_OK=false; toast('Recontagem indisponível: rode o SQL auditoria-novo.sql.','err'); drawContagem(); } else toast('Erro: '+error.message,'err'); return; }
+  item.recontar=flag; paintRow(tr,item); drawChips(); marcaSalvo();
+  if(flag){ const inp=tr.querySelector('input.qtd'); if(inp){ inp.focus(); inp.select(); } }
+}
+// eventos da lista (delegação)
+const cl=$('#contList');
+cl.addEventListener('change',e=>{
+  const tr=e.target.closest('.crow'); if(!tr) return;
+  if(e.target.matches('input.qtd')) salvarContagem(tr.dataset.id,e.target.value,tr);
+  else if(e.target.matches('textarea.cb')) salvarCodigoBarras(tr.dataset.id,e.target.value);
+});
+cl.addEventListener('click',e=>{
+  const tr=e.target.closest('.crow'); if(!tr) return;
+  const st=e.target.closest('.step button');
+  if(st){
+    const inp=tr.querySelector('input.qtd'); const item=CONT.itens.find(i=>i.id===tr.dataset.id); if(!inp||!item) return;
+    const base=inp.value===''?(Number(st.dataset.d)>0?0:item.qtd_esperada+1):Number(inp.value);
+    const nv=Math.max(0,base+Number(st.dataset.d));
+    salvarContagem(tr.dataset.id,String(nv),tr);
+    const ni=tr.querySelector('input.qtd'); if(ni) ni.focus();
+    return;
+  }
+  const act=e.target.closest('[data-act]');
+  if(act) recontarItem(tr.dataset.id,tr,act.dataset.act==='recontar');
+});
+cl.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||!e.target.matches('input.qtd')) return;
+  e.preventDefault();
+  const tr=e.target.closest('.crow'); const val=e.target.value;
+  const next=tr.nextElementSibling;
+  salvarContagem(tr.dataset.id,val,tr);
+  const ni=next&&next.querySelector('input.qtd:not([disabled])');
+  if(ni){ ni.focus(); ni.select(); ni.scrollIntoView({block:'center',behavior:'smooth'}); }
+});
+cl.addEventListener('mousedown',e=>{ if(e.target.closest('button')) e.preventDefault(); });   // não deixa o campo perder o foco (e repintar a linha) antes do clique
+cl.addEventListener('focusin',e=>{ if(e.target.matches('input.qtd')) e.target.select(); });
+
+/* ---- finalizar ---- */
+$('#btnFinalizar').onclick=async()=>{
+  if(!CONT) return;
+  const pend=CONT.itens.filter(i=>i.qtd_fisica==null);
+  if(pend.length && !confirm(`${pend.length} itens não foram contados. Considerar como 0 (falta total)?\n\nOK = considerar 0 e finalizar\nCancelar = voltar para contar`)) return;
+  const rec=RECONTAR_OK?CONT.itens.filter(i=>i.recontar).length:0;
+  if(rec && !confirm(`${rec} item(ns) ainda aguardam recontagem. Finalizar mesmo assim?`)) return;
+  await loadParticipantes();
+  const q=await askQuem({titulo:`Finalizar auditoria #${CONT.auditoria.numero}`,msg:'O estoque oficial passará a valer a quantidade física contada.',ok:'Finalizar',padrao:$('#contResp').value||''});
+  if(!q) return;
+  const btn=$('#btnFinalizar'); btn.disabled=true; btn.innerHTML='<span class="spin"></span> Finalizando...';
+  try{
+    if(pend.length){
+      const aFalta=[],aOk=[];
+      pend.forEach(i=>{ i.qtd_fisica=0; i.status=statusItem(i.qtd_esperada,0); (i.status==='ok'?aOk:aFalta).push(i.id); });
+      if(aFalta.length) await batch(aFalta,200,ch=>sb.from('aud_itens_auditoria').update({qtd_fisica:0,status:'falta'}).in('id',ch).then(r=>{if(r.error)throw r.error;}));
+      if(aOk.length) await batch(aOk,200,ch=>sb.from('aud_itens_auditoria').update({qtd_fisica:0,status:'ok'}).in('id',ch).then(r=>{if(r.error)throw r.error;}));
+    }
+    const prod=CONT.itens.map(i=>({id_produto:i.id_produto,nome:i.nome,categoria:i.categoria,valor:i.valor,estoque:i.qtd_fisica??0,updated_at:new Date().toISOString()}));
+    await batch(prod,300,ch=>sb.from('aud_produtos').upsert(ch,{onConflict:'id_produto'}).then(r=>{if(r.error)throw r.error;}));
+    let resumo=null; try{ resumo=await computeResumo(CONT.auditoria.id); }catch(e){}
+    const patch={status:'finalizada',finalizado_em:new Date().toISOString()}; if(resumo) patch.resumo=resumo;
+    const {error}=await updAud(CONT.auditoria.id,patch);
+    if(error) throw error;
+    CONT.auditoria.status='finalizada'; PROD_DIRTY=true; DIV_DIRTY=true; delete RESUMOS[CONT.auditoria.id];
+    try{ localStorage.removeItem('aud_open'); }catch(e){}
+    logAud('finalizou',{id:CONT.auditoria.id,numero:CONT.auditoria.numero,quem:q.nome,detalhe:resumo?`${resumo.falta} faltas, ${resumo.exc} excessos`:null});
+    toast('Auditoria #'+CONT.auditoria.numero+' finalizada. Estoque atualizado.','ok');
+    showTab('auditorias');
+  }catch(err){ toast('Erro ao finalizar: '+err.message,'err'); }
+  finally{ btn.disabled=false; btn.textContent='Finalizar auditoria'; }
+};
+
+/* ---- presença: quem mais está contando agora ---- */
+let presCh=null, presKey='u'+Math.random().toString(36).slice(2,8);
+function setupPresence(){
+  try{
+    presCh=sb.channel('aud-presence',{config:{presence:{key:presKey}}});
+    presCh.on('presence',{event:'sync'},renderPresence).subscribe();
+  }catch(e){ presCh=null; }
+}
+function trackPresence(){ try{ if(presCh&&CONT) presCh.track({aud:CONT.auditoria.id,nome:$('#contResp').value||'',t:Date.now()}); }catch(e){} }
+function untrackPresence(){ try{ if(presCh) presCh.untrack(); }catch(e){} $('#presTxt').textContent=''; }
+function renderPresence(){
+  try{
+    if(!CONT||!presCh) return;
+    const st=presCh.presenceState(), nomes=[]; let anon=0;
+    Object.keys(st).forEach(k=>{ if(k===presKey) return; st[k].forEach(m=>{ if(m.aud===CONT.auditoria.id){ if(m.nome) nomes.push(m.nome); else anon++; } }); });
+    const tot=nomes.length+anon;
+    $('#presTxt').textContent=!tot?'':nomes.length&&!anon?`${nomes.join(', ')} ${nomes.length>1?'estão contando':'está contando'} neste momento`:`${tot} outra${tot>1?'s':''} pessoa${tot>1?'s':''} contando neste momento`;
+  }catch(e){}
+}
+
+/* ================= DIVERGÊNCIAS ================= */
+let DIV_TIPO='falta', DIV_LIM=300, DIV_VIEW=[];
+async function renderDivergencias(){
+  await Promise.all([loadAuditorias(),loadDivs()]);
+  const cats=[...new Set(DIVS.map(i=>i.categoria).filter(Boolean))].sort();
+  const auds=[...AUDITORIAS].sort((a,b)=>b.numero-a.numero).filter(a=>DIVS.some(i=>i.auditoria_id===a.id));
+  const cc=$('#divCat').value, ca=$('#divAud').value;
+  $('#divCat').innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  $('#divAud').innerHTML='<option value="">Todas as auditorias</option>'+auds.map(a=>`<option value="${a.id}">#${a.numero} · ${fmtDate(a.data_auditoria)}</option>`).join('');
+  $('#divCat').value=cats.includes(cc)?cc:''; $('#divAud').value=auds.some(a=>a.id===ca)?ca:'';
+  DIV_LIM=300; drawDiv();
+}
+$('#divSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; DIV_TIPO=b.dataset.t; $$('#divSeg button').forEach(x=>x.classList.toggle('on',x===b)); DIV_LIM=300; drawDiv(); });
+['#divBusca','#divCat','#divAud'].forEach(s=>{ $(s).oninput=()=>{DIV_LIM=300;drawDiv();}; $(s).onchange=()=>{DIV_LIM=300;drawDiv();}; });
+$('#divMais').onclick=()=>{DIV_LIM+=300;drawDiv();};
+function drawDiv(){
+  const isF=DIV_TIPO==='falta';
+  const am={}; AUDITORIAS.forEach(a=>am[a.id]=a);
+  const q=$('#divBusca').value.toLowerCase(), cat=$('#divCat').value, au=$('#divAud').value;
+  const list=DIVS.filter(i=>i.status===DIV_TIPO&&(!cat||i.categoria===cat)&&(!au||i.auditoria_id===au)&&(!q||String(i.nome).toLowerCase().includes(q)||String(i.id_produto).includes(q)))
+    .map(i=>{ const a=am[i.auditoria_id]||{}; const dif=Math.abs((i.qtd_fisica||0)-i.qtd_esperada); return {...i,numero:a.numero,data:a.data_auditoria,participantes:a.participantes||[],dif,valorDif:dif*i.valor}; })
+    .sort((a,b)=>(b.numero-a.numero)||String(a.nome).localeCompare(b.nome));
+  DIV_VIEW=list;
+  $('#divTable thead').innerHTML=`<tr><th>Auditoria</th><th>Data</th><th>Quem contou</th><th>Código</th><th>Item</th><th>Categoria</th><th class="num">Esperado</th><th class="num">Físico</th><th class="num">${isF?'Falta':'Excesso'}</th><th class="num">Valor</th>${isF?'<th>Cód. barras</th>':''}</tr>`;
+  const cor=isF?'var(--falta)':'var(--exc)';
+  $('#divTable tbody').innerHTML=list.length?list.slice(0,DIV_LIM).map(i=>`<tr>
+    <td><b>#${i.numero??'?'}</b></td><td>${fmtDate(i.data)}</td><td>${avatars(i.participantes)}</td>
+    <td>${i.id_produto}</td><td>${esc(i.nome)}</td><td>${esc(i.categoria||'')}</td>
+    <td class="num">${num(i.qtd_esperada)}</td><td class="num">${num(i.qtd_fisica||0)}</td>
+    <td class="num" style="color:${cor};font-weight:650">${num(i.dif)}</td><td class="num" style="color:${cor}">${money(i.valorDif)}</td>${isF?`<td>${fmtCodigos(i.codigo_barras)}</td>`:''}</tr>`).join('')
+    :`<tr><td colspan="${isF?11:10}" class="empty">Nenhum registro.</td></tr>`;
+  $('#divMais').classList.toggle('hidden',list.length<=DIV_LIM);
+  const totVal=list.reduce((s,i)=>s+i.valorDif,0), totQtd=list.reduce((s,i)=>s+i.dif,0);
+  $('#divKpis').innerHTML=`<div><div class="l">Valor total em ${isF?'faltas':'excessos'}</div><div class="v" style="color:${cor}">${money(totVal)}</div></div><div><div class="l">Unidades</div><div class="v">${num(totQtd)}</div></div><div><div class="l">Itens</div><div class="v">${num(list.length)}</div></div>`;
+}
+$('#btnDivXlsx').onclick=()=>{
+  const isF=DIV_TIPO==='falta';
+  xlsx(isF?'faltas.xlsx':'excessos.xlsx',{[isF?'Faltas':'Excessos']:DIV_VIEW.map(i=>({'Auditoria':i.numero,'Data':fmtDate(i.data),'Quem contou':(i.participantes||[]).join(', '),'Código':i.id_produto,'Item':i.nome,'Categoria':i.categoria,'Esperado':i.qtd_esperada,'Físico':i.qtd_fisica||0,[isF?'Falta':'Excesso']:i.dif,'Valor R$':+i.valorDif.toFixed(2),...(isF?{'Cód. barras':(i.codigo_barras||'').replace(/\n/g,' | ')}:{})}))});
+};
+
+/* ================= REALTIME ================= */
+let rtTimer=null;
+function scheduleRefresh(){
+  clearTimeout(rtTimer);
+  rtTimer=setTimeout(()=>{
+    if(ACTIVE_TAB==='dashboard') renderDashboard();
+    else if(ACTIVE_TAB==='estoque') renderEstoque();
+    else if(ACTIVE_TAB==='auditorias') renderAuditorias();
+    else if(ACTIVE_TAB==='divergencias') renderDivergencias();
+  },2500);
+}
+function onItemChange(p){
+  const row=p.new||p.old; if(row&&row.auditoria_id) delete RESUMOS[row.auditoria_id];
+  DIV_DIRTY=true;
+  if(!CONT || ACTIVE_TAB!=='contagem') return;
+  if(!row||row.auditoria_id!==CONT.auditoria.id) return;
+  if(p.eventType==='DELETE') return;
+  const it=CONT.itens.find(x=>x.id===row.id); if(!it) return;
+  const mudou=it.qtd_fisica!==row.qtd_fisica||it.status!==row.status||it.recontar!==row.recontar;
+  it.qtd_fisica=row.qtd_fisica; it.status=row.status; if('recontar' in row) it.recontar=row.recontar;
+  const tr=document.querySelector(`#contList [data-id="${row.id}"]`);
+  if(tr && mudou && !tr.contains(document.activeElement)) paintRow(tr,it);
+  drawChips(); drawProgresso();
+}
+function onAudChange(p){
+  if(CONT && p.new && p.new.id===CONT.auditoria.id && p.new.status==='finalizada' && CONT.auditoria.status!=='finalizada'){
+    CONT.auditoria.status='finalizada'; $('#btnFinalizar').classList.add('hidden'); drawContagem();
+    toast('Auditoria finalizada por outro usuário.','ok');
+  }
+}
+function setupRealtime(){
+  sb.channel('aud-realtime')
+    .on('postgres_changes',{event:'*',schema:'public',table:'aud_produtos'},        ()=>{ PROD_DIRTY=true; scheduleRefresh(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'aud_auditorias'},      p=>{ onAudChange(p); scheduleRefresh(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'aud_itens_auditoria'}, p=>{ onItemChange(p); if(ACTIVE_TAB!=='contagem') scheduleRefresh(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'aud_participantes'},   ()=>{ if($('#ovNova').classList.contains('open')) loadParticipantes().then(renderParticList); })
+    .subscribe(status=>{ $('#rtState').textContent=status==='SUBSCRIBED'?'Ao vivo':'Reconectando...'; });
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(_quemRes) _quemRes(null); $$('.overlay.open').forEach(o=>{ if(o.id!=='ovQuem') o.classList.remove('open'); }); } });
+
+/* ================= INIT ================= */
+(async function init(){
+  let t='light'; try{ t=localStorage.getItem('aud_theme')||'light'; }catch(e){}
+  applyTheme(t);
+  setupRealtime(); setupPresence();
+  let openId=null; try{ openId=localStorage.getItem('aud_open'); }catch(e){}
+  if(openId){
+    const {data:aud}=await sb.from('aud_auditorias').select('id,status').eq('id',openId).maybeSingle();
+    if(aud && aud.status==='aberta'){ loadAuditorias(); await abrirContagem(openId); return; }
+    try{ localStorage.removeItem('aud_open'); }catch(e){}
+  }
+  await renderDashboard();
+})();
+</script>
+</body>
+</html>
